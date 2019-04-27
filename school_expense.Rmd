@@ -15,7 +15,100 @@ library(janitor)
 
 ```{r download, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 
+# SAT download data
+sat18 <- read_xls("sat18.xls") %>% 
+  clean_names() %>% 
+  select(-year)
+sat17 <- read_xls("sat17.xls") %>% 
+  clean_names()
+sat16 <- read_xls("sat16.xls") %>% 
+  clean_names() %>% 
+  select(-year)
+sat15 <- read_xls("sat15.xls") %>% 
+  clean_names()
+
+# ACT download data
+act18 <- read_xls("act18.xls") %>% 
+  clean_names() %>% 
+  mutate_at(9:14, as.integer) %>% 
+  select(-year)
+act17 <- read_xls("act17.xls") %>% 
+  clean_names() %>% 
+  mutate_at(9:14, as.integer)
+act16 <- read_xls("act16.xls") %>% 
+  clean_names() %>% 
+  mutate_at(6:11, as.integer)
+act15 <- read_xls("act15.xls") %>% 
+  clean_names() %>% 
+  mutate_at(6:11, as.integer) %>% 
+  select(-year)
+
+# AP scores download data
+ap18 <- read_xls("ap18.xls") %>% 
+  clean_names() %>% 
+  select(-year) %>% 
+  mutate_at(9:16, as.integer)
+
+ap17 <- read_xls("ap17.xls") %>% 
+  clean_names() %>% 
+  mutate_at(9:16, as.integer)
+
+ap16 <- read_xls("ap16.xls") %>% 
+  clean_names() %>% 
+  select(-year) %>% 
+  mutate_at(6:13, as.integer)
+ap15 <- read_xls("ap15.xls") %>% 
+  clean_names() %>% 
+  select(-year) %>% 
+  mutate_at(6:13, as.integer)
+
+expense18 <- read_xlsx("expense18.xlsx",
+                       skip = 10) %>% 
+  mutate(CDS = as.character(CDS))
+expense17 <- read_xlsx("expense17.xlsx",
+                       skip = 8)
+expense16 <- read_xls("expense16.xls", 
+                      skip = 7)
+expense15 <- read_xls("expense15.xls",
+                      skip = 7)
+
 
 
 ```
+
+
+```{r}
+
+# # school district?
+#   in between school districts
+#   in between counties
+# increases in spending
+
+# sort by outcomes, then graph expenses
+
+# merging datasets
+# full_sat <- bind_rows(sat15, sat16, sat17, sat18, .id="year") %>% 
+#   drop_na(sname) %>% 
+#   select(year, cds, sname, dname, cname, enroll12, num_tst_takr, )
+
+full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
+  drop_na(sname) %>% 
+  mutate(comp = (avg_scr_eng + avg_scr_math + avg_scr_read + avg_scr_sci)/4) %>% 
+  select(-rtype, -ccode, -cdcode, -scode, -c_dcode, -pct_ge21, -num_ge21) %>% 
+  View
+
+full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>% 
+  drop_na(sname) 
+
+full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year")
+
+
+school <- full_ap %>% 
+  left_join(full_act, by=c("cds", "year")) %>% 
+  View()
+  
+
+
+```
+
 
