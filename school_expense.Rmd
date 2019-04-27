@@ -122,12 +122,14 @@ act_med <- full_act %>%
 #   view()
 
 
-full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year")
+full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="yea r") %>% 
+  filter(! district %in% c("Statewide", "Statewide Totals")) %>% 
+  group_by(district) %>% 
+  summarize(d_spend = sum(edp_365)) %>% 
+  mutate(expense_rank = ntile(d_spend, 100)) 
 
-district <- full_act %>% 
-  inner_join(full_expense, by=c("dname" = "district", "year")) %>% 
-  group_by(dname) %>% 
-  mutate(expense_rank = ntile(edp_365, 100)) %>% 
+district <- act_med %>% 
+  inner_join(full_expense, by=c("dname" = "district")) %>% 
   View()
   
   
