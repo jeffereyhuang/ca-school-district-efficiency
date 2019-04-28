@@ -1,34 +1,20 @@
----
-title: "School Expenses"
-author: "Jeff Huang"
-date: "4/27/2019"
-output: html_document
----
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
+library(shiny)
 library(tidyverse)
-library(readxl)
-library(janitor)
-library(ggplot2)
 library(gt)
+library(ggthemes)
 
-```
-
-```{r download, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
-
-# SAT download data
-sat18 <- read_xls("sat18.xls") %>% 
-  clean_names() %>% 
-  select(-year)
-sat17 <- read_xls("sat17.xls") %>% 
-  clean_names()
-sat16 <- read_xls("sat16.xls") %>% 
-  clean_names() %>% 
-  select(-year)
-sat15 <- read_xls("sat15.xls") %>% 
-  clean_names()
+# expense <- read_rds("expense")
+# part <- read_rds("part")
+# comp <- read_rds("comp")
 
 # ACT download data
 act18 <- read_xls("act18.xls") %>% 
@@ -46,24 +32,6 @@ act15 <- read_xls("act15.xls") %>%
   mutate_at(6:11, as.integer) %>% 
   select(-year)
 
-# AP scores download data
-ap18 <- read_xls("ap18.xls") %>% 
-  clean_names() %>% 
-  select(-year) %>% 
-  mutate_at(9:16, as.integer)
-
-ap17 <- read_xls("ap17.xls") %>% 
-  clean_names() %>% 
-  mutate_at(9:16, as.integer)
-
-ap16 <- read_xls("ap16.xls") %>% 
-  clean_names() %>% 
-  select(-year) %>% 
-  mutate_at(6:13, as.integer)
-ap15 <- read_xls("ap15.xls") %>% 
-  clean_names() %>% 
-  select(-year) %>% 
-  mutate_at(6:13, as.integer)
 
 expense18 <- read_xlsx("expense18.xlsx",
                        skip = 10) %>% 
@@ -79,30 +47,6 @@ expense15 <- read_xls("expense15.xls",
                       skip = 7) %>% 
   clean_names() %>% 
   rename(edp_365 = expenditures_edp_365) 
-
-
-
-```
-
-
-```{r}
-
-# # school district?
-#   in between school districts
-#   in between counties
-# increases in spending
-
-# sort by outcomes, then graph expenses
-# group by
-
-# participation by county
-# money per county
-# efficiency per county
-
-# merging datasets
-# full_sat <- bind_rows(sat15, sat16, sat17, sat18, .id="year") %>% 
-#   drop_na(sname) %>% 
-#   select(year, cds, sname, dname, cname, enroll12, num_tst_takr, )
 
 full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
   drop_na(sname) %>% 
@@ -148,31 +92,33 @@ comp <- district %>%
   head(10)
 
 
-gt(comp) 
-gt(expense)
-gt(part)
-# write_rds(expense, "CA_EDUC_Data/expense") 
-# write_rds(part, "CA_EDUC_Data/part") 
-# write_rds(comp, "CA_EDUC_Data/comp") 
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("CA Education Data"),
+   
+   # Sidebar with a slider input for number of bins 
+      
+      # Show a plot of the generated distribution
+      mainPanel(
+         plotOutput("distPlot")
+      )
+   )
 
 
-  
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+   
+   output$distPlot <- renderPlot({
+      ggplot(expense, aes(x=dname,y=comp_rank)) +
+      geom_bar(stat="identity") + 
+      coord_flip() +
+      theme_economist() +
+      labs(title="Top 10 Highest Spending Districts - ACT Performance", y="Percentile Rank for ACT Scores",x=NULL)
+   })
+}
 
-
-
-  
-  
-
-
-
-# school <- full_ap %>% 
-#   left_join(full_act, by=c("cds", "year")) %>% 
-#   View()
-#   
-
-
-
-
-```
-
+# Run the application 
+shinyApp(ui = ui, server = server)
 
