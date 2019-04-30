@@ -13,73 +13,86 @@ library(readxl)
 library(janitor)
 library(ggplot2)
 library(gt)
-
+library(lmtest)
 ```
 
 ```{r download, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 
 # SAT download data
-sat18 <- read_xls("sat18.xls") %>% 
+sat18 <- read_xls("data/sat18.xls") %>% 
   clean_names() %>% 
   select(-year)
-sat17 <- read_xls("sat17.xls") %>% 
+sat17 <- read_xls("data/sat17.xls") %>% 
   clean_names()
-sat16 <- read_xls("sat16.xls") %>% 
+sat16 <- read_xls("data/sat16.xls") %>% 
   clean_names() %>% 
   select(-year)
-sat15 <- read_xls("sat15.xls") %>% 
+sat15 <- read_xls("data/sat15.xls") %>% 
   clean_names()
 
 # ACT download data
-act18 <- read_xls("act18.xls") %>% 
+act18 <- read_xls("data/act18.xls") %>% 
   clean_names() %>% 
   mutate_at(9:14, as.integer) %>% 
   select(-year)
-act17 <- read_xls("act17.xls") %>% 
+act17 <- read_xls("data/act17.xls") %>% 
   clean_names() %>% 
   mutate_at(9:14, as.integer)
-act16 <- read_xls("act16.xls") %>% 
+act16 <- read_xls("data/act16.xls") %>% 
   clean_names() %>% 
   mutate_at(6:11, as.integer)
-act15 <- read_xls("act15.xls") %>% 
+act15 <- read_xls("data/act15.xls") %>% 
   clean_names() %>% 
   mutate_at(6:11, as.integer) %>% 
   select(-year)
 
 # AP scores download data
-ap18 <- read_xls("ap18.xls") %>% 
+ap18 <- read_xls("data/ap18.xls") %>% 
   clean_names() %>% 
   select(-year) %>% 
   mutate_at(9:16, as.integer)
 
-ap17 <- read_xls("ap17.xls") %>% 
+ap17 <- read_xls("data/ap17.xls") %>% 
   clean_names() %>% 
   mutate_at(9:16, as.integer)
 
-ap16 <- read_xls("ap16.xls") %>% 
+ap16 <- read_xls("data/ap16.xls") %>% 
   clean_names() %>% 
   select(-year) %>% 
   mutate_at(6:13, as.integer)
-ap15 <- read_xls("ap15.xls") %>% 
+ap15 <- read_xls("data/ap15.xls") %>% 
   clean_names() %>% 
   select(-year) %>% 
   mutate_at(6:13, as.integer)
 
-expense18 <- read_xlsx("expense18.xlsx",
+
+expense18 <- read_xlsx("data/expense18.xlsx",
                        skip = 10) %>% 
   mutate(CDS = as.character(CDS)) %>% 
   clean_names()
-expense17 <- read_xlsx("expense17.xlsx",
+expense17 <- read_xlsx("data/expense17.xlsx",
                        skip = 8) %>% 
   clean_names()
-expense16 <- read_xls("expense16.xls", 
+expense16 <- read_xls("data/expense16.xls", 
                       skip = 7) %>% 
   clean_names
-expense15 <- read_xls("expense15.xls",
+expense15 <- read_xls("data/expense15.xls",
                       skip = 7) %>% 
   clean_names() %>% 
   rename(edp_365 = expenditures_edp_365) 
 
+
+# sd
+carmel <- read_csv("data/carmel-2016.csv")
+mend <- read_csv("data/mendocino-unified-2017.csv")
+sh <- read_csv("data/saint-helena-unified-2017.csv")
+
+# reduced lunch
+frlunch <- read_xlsx("frlunch1819.xlsx", skip=1)
+
+# staff<-read_delim("StaffDemo17.txt", delim = " ")
+# grad <- read_delim("cohort1718.txt")
+# other <- read_delim("filesenr.asp.txt")
 
 
 ```
@@ -104,19 +117,62 @@ expense15 <- read_xls("expense15.xls",
 #   drop_na(sname) %>% 
 #   select(year, cds, sname, dname, cname, enroll12, num_tst_takr, )
 
+# merging act scores
 full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
-  drop_na(sname) %>% 
+  drop_na(sname, enroll12) %>% 
   mutate(comp = (avg_scr_eng + avg_scr_math + avg_scr_read + avg_scr_sci)/4, score = comp * num_tst_takr) %>% 
   mutate(test_per = num_tst_takr / enroll12) %>% 
   select(1:8, comp, score, test_per, -rtype)
 
 # district ranks
-act_med <- full_act %>% 
+district <- full_act %>% 
   drop_na(test_per, comp) %>% 
   group_by(dname) %>% 
+  filter(num_tst_takr > 5) %>% 
   summarize(test_per = mean(num_tst_takr)/mean(enroll12), avg_comp = sum(score)/sum(num_tst_takr)) %>%
   ungroup() %>% 
   mutate(part_rank = ntile(test_per, 100), comp_rank = ntile(avg_comp, 100))
+
+school <- full_act %>% 
+  drop_na(test_per, comp) %>% 
+  filter(num_tst_takr>5) %>% 
+  mutate(test_per = num_tst_takr/enroll12) %>% 
+  group_by(sname, year)
+
+
+# each school change in money
+# test <- school %>% 
+#   ungroup() %>% 
+#   select(cds, comp, year, test_per) %>% 
+#   group_by(cds) %>% 
+#   spread(year, comp) %>% 
+#   mutate(part1_rank = ntile(test_per, 100), comp1_rank = ntile(`1`, 100)) 
+
+# 
+# s1 <- school %>% 
+#   filter(year==1) %>% 
+#   ungroup() %>% 
+#   mutate(part1_rank = ntile(test_per, 100), comp1_rank = ntile(comp, 100)) %>% 
+#   select(cds, part1_rank, comp1_rank)
+# 
+# s2 <- school %>% 
+#   filter(year==2) %>% 
+#   ungroup() %>% 
+#   mutate(part2_rank = ntile(test_per, 100), comp2_rank = ntile(comp, 100)) %>% 
+#   select(cds, part2_rank, comp2_rank)
+# 
+# s3 <- school %>% 
+#   filter(year==3) %>% 
+#   ungroup() %>% 
+#   mutate(part3_rank = ntile(test_per, 100), comp3_rank = ntile(comp, 100)) %>% 
+#   select(cds, part3_rank, comp3_rank)
+# 
+# s4 <- school %>% 
+#   filter(year == 4) %>% 
+#   ungroup() %>% 
+#   mutate(part4_rank = ntile(test_per, 100), comp4_rank = ntile(comp, 100)) %>% 
+#   select(cds, part4_rank, comp4_rank)
+
 
 # full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>% 
 #   drop_na(sname) %>% 
@@ -124,16 +180,33 @@ act_med <- full_act %>%
 #   select(1:8, -rtype, )
 #   view()
 
-
-full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="yea r") %>% 
-  filter(! district %in% c("Statewide", "Statewide Totals")) %>% 
+## expense data
+full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year") %>% 
+  filter(! district %in% c("Statewide", "Statewide Totals")) %>%
+  filter(lea_type == "Unified") %>% 
   group_by(district) %>% 
-  summarize(d_spend = sum(edp_365)) %>% 
-  mutate(expense_rank = ntile(d_spend, 100)) 
+  summarize(d_spend = sum(current_expense_ada)) %>% 
+  mutate(expense_rank = ntile(desc(d_spend), 100)) 
 
-district <- act_med %>% 
+district <- district %>% 
   inner_join(full_expense, by=c("dname" = "district"))
+  
 
+#   in between schools in same district
+#   in between districts in same county
+#   ap scores
+
+
+# increases in spending
+# compare year 1 and year 4, filter for increases in spending, comp, participation
+
+  
+# county display stuff
+
+
+```
+
+```{r}
 
 expense <- district %>% 
   arrange(desc(expense_rank)) %>% 
@@ -147,32 +220,24 @@ comp <- district %>%
   arrange(desc(comp_rank)) %>% 
   head(10)
 
-
-gt(comp) 
-gt(expense)
-gt(part)
-# write_rds(expense, "CA_EDUC_Data/expense") 
-# write_rds(part, "CA_EDUC_Data/part") 
-# write_rds(comp, "CA_EDUC_Data/comp") 
-
+# metrics - get a per capita rank, not pure spend
+efficiency <- district %>% 
+  mutate(efficiency_rank = 0.5 * (0.6 * comp_rank + 0.4 * part_rank) + 0.5 * expense_rank) %>% 
+  arrange(desc(efficiency_rank)) %>% 
+  rename(District = dname, "Test Participation Rate"=test_per, 
+         "Avg. Composite Score" = avg_comp, 
+         "Participation Percentile Rank"=part_rank, 
+         "Composite Percentile Rank" = comp_rank, 
+         "Per Pupil Spend" = d_spend,
+         "Spend Percentile Rank" = expense_rank,
+         "Efficiency Index" = efficiency_rank) %>% 
+  head(10)
 
   
 
-
-
-  
-  
-
-
-
-# school <- full_ap %>% 
-#   left_join(full_act, by=c("cds", "year")) %>% 
-#   View()
-#   
-
-
-
-
+write_rds(expense, "CA_EDUC_Data/expense.rds")
+write_rds(part, "CA_EDUC_Data/part.rds")
+write_rds(comp, "CA_EDUC_Data/comp.rds")
+write_rds(efficiency, "CA_EDUC_Data/efficiency.rds")
 ```
-
 
