@@ -99,12 +99,14 @@ pc <- read_csv("data/pc-2016.csv") %>%
 
 # fontana & irvine - lot of act participation (fremont), irvine low spending ()
 
+# $61-74K
 
 # maybe fontana, other act performance is high grad despite low performance
 # maybe irvine has high teacher salary?
 
 font <- read_csv("data/fontana-unified-2016.csv") %>% 
   clean_names() 
+
 
 irvine <- read_csv("data/irvine-unified-2016.csv") %>% 
   clean_names()
@@ -113,8 +115,11 @@ irvine <- read_csv("data/irvine-unified-2016.csv") %>%
 # addtl stats
 frlunch <- read_xlsx("frlunch1819.xlsx", skip=1)
 staff <- read_tsv("StaffDemo17.txt")
-other <- read_tsv("filesenr.asp.txt")
 
+
+# # school level v. other schools in district or district level vs. other schools in county?
+#   in between school districts
+#   in between counties
 
 
 ```
@@ -122,22 +127,18 @@ other <- read_tsv("filesenr.asp.txt")
 
 ```{r}
 
-# # school district?
-#   in between school districts
-#   in between counties
-# increases in spending
 
-# sort by outcomes, then graph expenses
-# group by
-
-# participation by county
-# money per county
-# efficiency per county
 
 # merging datasets
 # full_sat <- bind_rows(sat15, sat16, sat17, sat18, .id="year") %>% 
 #   drop_na(sname) %>% 
 #   select(year, cds, sname, dname, cname, enroll12, num_tst_takr, )
+
+# full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>% 
+#   drop_na(sname) %>% 
+#   mutate(total = num_scr)
+#   select(1:8, -rtype, )
+#   view()
 
 # merging act scores
 full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
@@ -162,45 +163,6 @@ school <- full_act %>%
   group_by(sname, year)
 
 
-# each school change in money
-# test <- school %>% 
-#   ungroup() %>% 
-#   select(cds, comp, year, test_per) %>% 
-#   group_by(cds) %>% 
-#   spread(year, comp) %>% 
-#   mutate(part1_rank = ntile(test_per, 100), comp1_rank = ntile(`1`, 100)) 
-
-# 
-# s1 <- school %>% 
-#   filter(year==1) %>% 
-#   ungroup() %>% 
-#   mutate(part1_rank = ntile(test_per, 100), comp1_rank = ntile(comp, 100)) %>% 
-#   select(cds, part1_rank, comp1_rank)
-# 
-# s2 <- school %>% 
-#   filter(year==2) %>% 
-#   ungroup() %>% 
-#   mutate(part2_rank = ntile(test_per, 100), comp2_rank = ntile(comp, 100)) %>% 
-#   select(cds, part2_rank, comp2_rank)
-# 
-# s3 <- school %>% 
-#   filter(year==3) %>% 
-#   ungroup() %>% 
-#   mutate(part3_rank = ntile(test_per, 100), comp3_rank = ntile(comp, 100)) %>% 
-#   select(cds, part3_rank, comp3_rank)
-# 
-# s4 <- school %>% 
-#   filter(year == 4) %>% 
-#   ungroup() %>% 
-#   mutate(part4_rank = ntile(test_per, 100), comp4_rank = ntile(comp, 100)) %>% 
-#   select(cds, part4_rank, comp4_rank)
-
-
-# full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>% 
-#   drop_na(sname) %>% 
-#   mutate(total = num_scr)
-#   select(1:8, -rtype, )
-#   view()
 
 ## expense data
 full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year") %>% 
@@ -214,16 +176,22 @@ district <- district %>%
   inner_join(full_expense, by=c("dname" = "district"))
   
 
-#   in between schools in same district
-#   in between districts in same county
-#   ap scores
+## teacher pay data
+# pay_data <- function(city_data) {
+#   mean(city_data$teacher_pay)
+# }
+
+# paste(pay_data(), list(mend, pc, carmel, fremont, irvine)
+
+## free reduced lunch
 
 
-# increases in spending
-# compare year 1 and year 4, filter for increases in spending, comp, participation
+## staff demographics
+# calculate california averages, and compare against them
 
-  
-# county display stuff
+
+
+# high school within district -- look in new xslx (pubdistricts)
 
 
 ```
