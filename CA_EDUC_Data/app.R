@@ -68,6 +68,11 @@ ui <- navbarPage("CA HS Education Stats",
               
 )
 
+# page 1: horizontal bar chart of diff characteristics
+# page 2: search school statistics
+# page 3: deep dives into edge cases
+# page 4: efficiency stats
+
 
 
 

@@ -82,17 +82,39 @@ expense15 <- read_xls("data/expense15.xls",
   rename(edp_365 = expenditures_edp_365) 
 
 
-# sd
-carmel <- read_csv("data/carmel-2016.csv")
-mend <- read_csv("data/mendocino-unified-2017.csv")
-sh <- read_csv("data/saint-helena-unified-2017.csv")
 
-# reduced lunch
+# Teacher Pay
+# teacher stats of most efficient school districts
+carmel <- read_csv("data/carmel-2015.csv") %>% 
+  clean_names() %>% 
+  filter(job_title == "Teacher")
+
+mend <- read_csv("data/mendocino-unified-2017.csv") %>% 
+  clean_names() %>% 
+  filter(job_title == "Hs Teacher")
+  
+pc <- read_csv("data/pc-2016.csv") %>% 
+  clean_names() %>% 
+  filter(str_detect(tolower(job_title), "teacher"))
+
+# fontana & irvine - lot of act participation (fremont), irvine low spending ()
+
+
+# maybe fontana, other act performance is high grad despite low performance
+# maybe irvine has high teacher salary?
+
+font <- read_csv("data/fontana-unified-2016.csv") %>% 
+  clean_names() 
+
+irvine <- read_csv("data/irvine-unified-2016.csv") %>% 
+  clean_names()
+
+
+# addtl stats
 frlunch <- read_xlsx("frlunch1819.xlsx", skip=1)
+staff <- read_tsv("StaffDemo17.txt")
+other <- read_tsv("filesenr.asp.txt")
 
-# staff<-read_delim("StaffDemo17.txt", delim = " ")
-# grad <- read_delim("cohort1718.txt")
-# other <- read_delim("filesenr.asp.txt")
 
 
 ```
@@ -222,7 +244,7 @@ comp <- district %>%
 
 # metrics - get a per capita rank, not pure spend
 efficiency <- district %>% 
-  mutate(efficiency_rank = 0.5 * (0.6 * comp_rank + 0.4 * part_rank) + 0.5 * expense_rank) %>% 
+  mutate(efficiency_rank = (4/12) * comp_rank + (3/12) * part_rank + (5/12) * expense_rank) %>% 
   arrange(desc(efficiency_rank)) %>% 
   rename(District = dname, "Test Participation Rate"=test_per, 
          "Avg. Composite Score" = avg_comp, 
