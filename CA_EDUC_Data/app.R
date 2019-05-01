@@ -13,6 +13,9 @@ library(readxl)
 library(janitor)
 library(gt)
 library(ggthemes)
+library(DT)
+
+# read in data
 
 expense <- read_rds("expense.rds")
 part <- read_rds("part.rds")
@@ -21,10 +24,21 @@ eff <- read_rds("efficiency.rds")
 
 
 # Define UI for application that draws a histogram
+
 ui <- navbarPage("CA HS Education Stats",
    
   
-   # Application title
+   # different tabs
+   
+   tabPanel("Most Efficient",
+            fluidPage(
+              titlePanel("20 Most Efficient School Districts"),
+              mainPanel(
+                DTOutput("effTable")
+              )
+            )
+            
+   ),
    tabPanel("Top Spenders",
             fluidPage(
               titlePanel("ACT Performance - Percentile Rank"),
@@ -55,11 +69,25 @@ ui <- navbarPage("CA HS Education Stats",
            )
            
   ),
-  tabPanel("Most Efficient",
+  
+  tabPanel("About",
            fluidPage(
-             titlePanel("Top Performers with the Lowest Spending"),
+             titlePanel("About This Project"),
              mainPanel(
-               tableOutput("effTable")
+               "Much of recent scholarship and political debate regarding education has focused on money and outcomes.
+               This project was created to explore some of those trends. I have aggregated data across different sources 
+               from the California Department of Education, as well as Transparent California.",
+               
+               br(),
+               br(),
+               
+               "This project was created by Jefferey Huang (jeffereyhuang[at]gmail.com). The code can be found at https://github.com/jeffereyhuang/california-county-education-data.",
+               
+               br(),
+               br(),
+               
+               "Special thanks to both the CA Department of Education and Transparent CA for aggregating and publishing—this project would not be possible without your help. Additionally, 
+               thank you to Data is Plural for pointing me to this dataset."
              )
            )
            
@@ -105,9 +133,11 @@ server <- function(input, output) {
      
    })
    
-   output$effTable <- renderTable({
-      eff
-       
+   output$effTable <- renderDT({
+      datatable(eff,
+                class="display",
+                options=list(dom="t"))
+
    })
 }
 

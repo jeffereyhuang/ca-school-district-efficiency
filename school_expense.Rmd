@@ -65,7 +65,7 @@ ap15 <- read_xls("data/ap15.xls") %>%
   select(-year) %>% 
   mutate_at(6:13, as.integer)
 
-
+# per district expenses data — clean data to merge later
 expense18 <- read_xlsx("data/expense18.xlsx",
                        skip = 10) %>% 
   mutate(CDS = as.character(CDS)) %>% 
@@ -140,14 +140,18 @@ staff <- read_tsv("StaffDemo17.txt")
 #   select(1:8, -rtype, )
 #   view()
 
-# merging act scores
+# merging act scores. need enrollment and school names to exist for calculations, and to get rid of null values. 
+
+# create composite scores by averaging each of the different scores, and create a "score" variable representing total score (to be added and divided at the district level later)
+
 full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
   drop_na(sname, enroll12) %>% 
   mutate(comp = (avg_scr_eng + avg_scr_math + avg_scr_read + avg_scr_sci)/4, score = comp * num_tst_takr) %>% 
-  mutate(test_per = num_tst_takr / enroll12) %>% 
+  mutate(test_per = num_tst_takr / enroll12) %>%
   select(1:8, comp, score, test_per, -rtype)
 
-# district ranks
+# district ranks. make sure that there are sufficient test takers (to prevent large outliers). Create a participation rate by dividing num of ACT test takers by 12th grade enrollment. not an meaningful rate by itself (all grades take the test), but it is a proxy for how many students are in a school, and how many take the test. used a percentile rank to avoid minor errors in this methodology
+
 district <- full_act %>% 
   drop_na(test_per, comp) %>% 
   group_by(dname) %>% 
@@ -156,21 +160,26 @@ district <- full_act %>%
   ungroup() %>% 
   mutate(part_rank = ntile(test_per, 100), comp_rank = ntile(avg_comp, 100))
 
-school <- full_act %>% 
-  drop_na(test_per, comp) %>% 
-  filter(num_tst_takr>5) %>% 
-  mutate(test_per = num_tst_takr/enroll12) %>% 
-  group_by(sname, year)
+
+# 
+# school <- full_act %>% 
+#   drop_na(test_per, comp) %>% 
+#   filter(num_tst_takr>5) %>% 
+#   mutate(test_per = num_tst_takr/enroll12) %>% 
+#   group_by(sname, year)
 
 
 
-## expense data
+## expense data. binding 4 year averages of expenses. I wanted to use average daily attendance (current_expense_ada) to come up with a number of dollars spent per pupil according to days attended in school.
+
 full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year") %>% 
   filter(! district %in% c("Statewide", "Statewide Totals")) %>%
   filter(lea_type == "Unified") %>% 
   group_by(district) %>% 
   summarize(d_spend = sum(current_expense_ada)) %>% 
   mutate(expense_rank = ntile(desc(d_spend), 100)) 
+
+# merged the two datasets to perform more analysis
 
 district <- district %>% 
   inner_join(full_expense, by=c("dname" = "district"))
@@ -198,6 +207,8 @@ district <- district %>%
 
 ```{r}
 
+# creating tables for later
+
 expense <- district %>% 
   arrange(desc(expense_rank)) %>% 
   head(10)
@@ -210,10 +221,12 @@ comp <- district %>%
   arrange(desc(comp_rank)) %>% 
   head(10)
 
-# metrics - get a per capita rank, not pure spend
+# metrics - creating the efficiency ranking, reorganizing for the table
+
 efficiency <- district %>% 
   mutate(efficiency_rank = (4/12) * comp_rank + (3/12) * part_rank + (5/12) * expense_rank) %>% 
   arrange(desc(efficiency_rank)) %>% 
+  fct_relabel(avg_comp, test_per, d_spend, comp_rank, part_rank, expense_rank, efficiency_rank) %>% 
   rename(District = dname, "Test Participation Rate"=test_per, 
          "Avg. Composite Score" = avg_comp, 
          "Participation Percentile Rank"=part_rank, 
@@ -221,9 +234,9 @@ efficiency <- district %>%
          "Per Pupil Spend" = d_spend,
          "Spend Percentile Rank" = expense_rank,
          "Efficiency Index" = efficiency_rank) %>% 
-  head(10)
+  head(20)
 
-  
+# writing files out
 
 write_rds(expense, "CA_EDUC_Data/expense.rds")
 write_rds(part, "CA_EDUC_Data/part.rds")
