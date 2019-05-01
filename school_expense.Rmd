@@ -226,7 +226,7 @@ comp <- district %>%
 efficiency <- district %>% 
   mutate(efficiency_rank = (4/12) * comp_rank + (3/12) * part_rank + (5/12) * expense_rank) %>% 
   arrange(desc(efficiency_rank)) %>% 
-  fct_relabel(avg_comp, test_per, d_spend, comp_rank, part_rank, expense_rank, efficiency_rank) %>% 
+  mutate(test_per = test_per * 100) %>% 
   rename(District = dname, "Test Participation Rate"=test_per, 
          "Avg. Composite Score" = avg_comp, 
          "Participation Percentile Rank"=part_rank, 

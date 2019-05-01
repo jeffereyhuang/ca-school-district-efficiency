@@ -136,8 +136,10 @@ server <- function(input, output) {
    output$effTable <- renderDT({
       datatable(eff,
                 class="display",
-                options=list(dom="t"))
+                options=list(dom="t")) %>%
+                formatRound(c(1:8), 1)
 
+     
    })
 }
 
