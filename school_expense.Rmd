@@ -99,7 +99,7 @@ pc <- read_csv("data/pc-2016.csv") %>%
 
 # fontana & irvine - lot of act participation (fremont), irvine low spending ()
 
-# $61-74K
+# $61-74K - avg teacher salary
 
 # maybe fontana, other act performance is high grad despite low performance
 # maybe irvine has high teacher salary?
@@ -113,8 +113,10 @@ irvine <- read_csv("data/irvine-unified-2016.csv") %>%
 
 
 # addtl stats
-frlunch <- read_xlsx("frlunch1819.xlsx", skip=1)
-staff <- read_tsv("StaffDemo17.txt")
+frlunch <- read_xlsx("frlunch1819.xlsx", skip=1) %>% 
+  clean_names()
+staff <- read_tsv("StaffDemo17.txt") %>% 
+  clean_names()
 
 
 # # school level v. other schools in district or district level vs. other schools in county?
@@ -126,6 +128,32 @@ staff <- read_tsv("StaffDemo17.txt")
 
 
 ```{r}
+
+# fontana & irvine - lot of act participation (fremont), irvine low spending ()
+
+# $61-74K - avg teacher salary
+
+# maybe fontana, other act performance is high grad despite low performance
+# maybe irvine has high teacher salary?
+
+staff <- staff %>% 
+  select(district_code, county_name, 
+         district_name, age, education_level, 
+         years_teaching, years_in_district, fte_teaching) %>% 
+  group_by(district_code) %>% 
+  summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), t_perc = mean(fte_teaching), edu_level = mode()) %>% 
+  View()
+  
+
+
+
+
+
+
+
+# # school level v. other schools in district or district level vs. other schools in county?
+#   in between school districts
+#   in between counties
 
 
 

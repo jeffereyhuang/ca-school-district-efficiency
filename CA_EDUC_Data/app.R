@@ -23,6 +23,27 @@ comp <- read_rds("comp.rds")
 eff <- read_rds("efficiency.rds")
 
 
+# background research
+# The public education system in the United States has received a great deal of attention
+# from both constituents and policy makers alike over the past thirty years. Identifying less
+# efficient school districts and examining the sources of inefficiency has important policy
+# implications. School districts might improve efficiency by managing educational
+# resources differently. In this paper, we estimate technical efficiency for all three types of
+# school districts in the state of Illinois K-12 public education system. Technical efficiency
+# in the Illinois school system averaged 90% for unit school districts, 85% for elementary
+# school districts, and 82% for high school districts. We also investigate possible factors
+# associated with inefficiency. The percentage of student enrollment that qualifies as low
+# income and the size of the school district are positively related to inefficiency. School
+# districts that have a larger percentage of teachers with advanced degrees are more
+# efficient. Having a lower ratio of students per administrator in a school district increases
+# technical efficiency.
+# Efficiency Analysis of K-12 Public Education in Illinois 
+
+
+
+
+
+
 # Define UI for application that draws a histogram
 
 ui <- navbarPage("CA HS Education Stats",
