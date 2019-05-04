@@ -19,11 +19,6 @@ library(lmtest)
 ```{r download, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 
 # SAT download data
-sat18 <- read_xls("data/sat18.xls") %>% 
-  clean_names() %>% 
-  select(-year)
-sat17 <- read_xls("data/sat17.xls") %>% 
-  clean_names()
 sat16 <- read_xls("data/sat16.xls") %>% 
   clean_names() %>% 
   select(-year)
@@ -112,16 +107,21 @@ irvine <- read_csv("data/irvine-unified-2016.csv") %>%
   clean_names()
 
 
-# addtl stats
+# frlunch - get free reduced lunch %  and enrollments and district code
+
 frlunch <- read_xlsx("frlunch1819.xlsx", skip=1) %>% 
   clean_names()
+
+# staffdemo - teacher/student ratio, teachers with advanced degrees, age, years teaching, years_in_district
+
 staff <- read_tsv("StaffDemo17.txt") %>% 
   clean_names()
 
+# get grad rate and % meeting requirements if possible to import
 
-# # school level v. other schools in district or district level vs. other schools in county?
-#   in between school districts
-#   in between counties
+# hs_benchmark <- read_tsv("cohort1718.txt") %>% 
+#   clean_names() %>% 
+#   View()
 
 
 ```
@@ -136,39 +136,46 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 # maybe fontana, other act performance is high grad despite low performance
 # maybe irvine has high teacher salary?
 
-staff <- staff %>% 
-  select(district_code, county_name, 
-         district_name, age, education_level, 
-         years_teaching, years_in_district, fte_teaching) %>% 
-  group_by(district_code) %>% 
-  summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), t_perc = mean(fte_teaching), edu_level = mode()) %>% 
-  View()
+
+
+
+
+# maybe split admin and teachers
+
+staff_edu <- staff %>% 
+  group_by(district_code, education_level) %>% 
+  summarize(count = n()) %>% 
+  spread(key=education_level, value=count) 
   
+# debug ft_teacher and ft_admin data
+
+add_staff <- staff %>% 
+  select(district_code, county_name, 
+       district_name, age, education_level, 
+       years_teaching, years_in_district, fte_teaching, fte_administrative, fte_pupil_services) %>% 
+  group_by(district_code) %>% 
+  summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), ft_teacher = sum(fte_teaching == 100),  ft_admin=sum(fte_administrative == 100, fte_pupil_services == 100), num_staff = n()) %>% 
+  mutate(ft_teacher = ft_teacher / 100, ft_admin = ft_admin / 100)
 
 
+# merge SAT dataset
 
+full_sat <- bind_rows(sat15, sat16, .id="year") %>%
+  drop_na(sname, enroll12, avg_scr_read, avg_scr_math) %>% 
+  mutate(sat_comp = as.numeric(avg_scr_read) + as.numeric(avg_scr_math), 
+         sat_score = as.numeric(num_tst_takr) * comp) %>% 
+  mutate(sat_test_per = as.numeric(num_tst_takr) / as.numeric(enroll12)) %>%
+  select(1:8, sat_comp, sat_score, sat_test_per, -rtype)
 
+# merge AP dataset
 
+full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>%
+  drop_na(sname, enroll12) %>% 
+  mutate(ap_45 = num_scr4 + num_scr5, 
+         num_tst = num_scr1 + num_scr2 + num_scr3 + num_scr4 + num_scr5) %>% 
+  mutate(ap_test_per = as.numeric(num_tst_takr) / as.numeric(enroll12)) %>% 
+  select(1:8, ap_45, num_tst, ap_test_per, -rtype)
 
-
-# # school level v. other schools in district or district level vs. other schools in county?
-#   in between school districts
-#   in between counties
-
-
-
-# merging datasets
-# full_sat <- bind_rows(sat15, sat16, sat17, sat18, .id="year") %>% 
-#   drop_na(sname) %>% 
-#   select(year, cds, sname, dname, cname, enroll12, num_tst_takr, )
-
-# full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>% 
-#   drop_na(sname) %>% 
-#   mutate(total = num_scr)
-#   select(1:8, -rtype, )
-#   view()
-
-# merging act scores. need enrollment and school names to exist for calculations, and to get rid of null values. 
 
 # create composite scores by averaging each of the different scores, and create a "score" variable representing total score (to be added and divided at the district level later)
 
@@ -187,14 +194,6 @@ district <- full_act %>%
   summarize(test_per = mean(num_tst_takr)/mean(enroll12), avg_comp = sum(score)/sum(num_tst_takr)) %>%
   ungroup() %>% 
   mutate(part_rank = ntile(test_per, 100), comp_rank = ntile(avg_comp, 100))
-
-
-# 
-# school <- full_act %>% 
-#   drop_na(test_per, comp) %>% 
-#   filter(num_tst_takr>5) %>% 
-#   mutate(test_per = num_tst_takr/enroll12) %>% 
-#   group_by(sname, year)
 
 
 
@@ -220,15 +219,6 @@ district <- district %>%
 
 # paste(pay_data(), list(mend, pc, carmel, fremont, irvine)
 
-## free reduced lunch
-
-
-## staff demographics
-# calculate california averages, and compare against them
-
-
-
-# high school within district -- look in new xslx (pubdistricts)
 
 
 ```
