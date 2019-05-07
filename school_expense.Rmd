@@ -119,8 +119,8 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 
 # get grad rate and % meeting requirements if possible to import
 
-# hs_benchmark <- read_tsv("cohort1718.txt") %>% 
-#   clean_names() %>% 
+# hs_benchmark <- read_tsv("cohort1718.txt") %>%
+#   clean_names() %>%
 #   View()
 
 
@@ -136,26 +136,73 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 # maybe fontana, other act performance is high grad despite low performance
 # maybe irvine has high teacher salary?
 
+font_tsal <- font %>% 
+  filter(str_detect(tolower(job_title), "teacher")) %>% 
+  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+            
+irvine_tsal <- irvine %>%
+  filter(str_detect(tolower(job_title), "teacher")) %>% 
+  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+
+carmel_tsal <- carmel %>% 
+  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+
+mend_tsal <- mend %>% 
+  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+
+pc_tsal <- pc %>% 
+  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
 
+# free and reduced lunch
 
-
+fr_lunch <- fr_lunch %>% 
+  View()
+  
 # maybe split admin and teachers
+
+total <- staff %>% 
+  group_by(district_code) %>% 
+  mutate(total = n()) %>% 
+  select(1:5, 17)
 
 staff_edu <- staff %>% 
   group_by(district_code, education_level) %>% 
   summarize(count = n()) %>% 
-  spread(key=education_level, value=count) 
+  spread(key=education_level, value=count) %>% 
+  ungroup()
   
-# debug ft_teacher and ft_admin data
+new_staff <- left_join(total, staff_edu, by="district_code") %>% 
+  distinct(district_code, .keep_all=TRUE) 
+
+n_edu_staff <- new_staff %>% 
+  mutate(bachelor = B+C, doctor = D, master = M + V, bach_per = bachelor / total, doc_per = D / total, mast_per = master/total) %>% 
+  select(district_code, county_name, district_name, bachelor, doctor, master, bach_per, doc_per, mast_per) 
+
+# staff characteristics
+
+count_teach <- staff %>% 
+  filter(fte_teaching > 70) %>% 
+  group_by(district_code) %>% 
+  summarize(teacher = n())
+
+count_admin <- staff %>% 
+  filter(fte_administrative > 70) %>% 
+  group_by(district_code) %>% 
+  summarize(admin = n())
 
 add_staff <- staff %>% 
   select(district_code, county_name, 
        district_name, age, education_level, 
        years_teaching, years_in_district, fte_teaching, fte_administrative, fte_pupil_services) %>% 
   group_by(district_code) %>% 
-  summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), ft_teacher = sum(fte_teaching == 100),  ft_admin=sum(fte_administrative == 100, fte_pupil_services == 100), num_staff = n()) %>% 
-  mutate(ft_teacher = ft_teacher / 100, ft_admin = ft_admin / 100)
+  summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), num_staff = n()) %>% 
+  left_join(count_admin, by="district_code") %>% 
+  left_join(count_teach, by="district_code")
+
+# full staff addtl info
+
+full_staff <- left_join(n_edu_staff, add_staff, by="district_code")
 
 
 # merge SAT dataset
@@ -210,14 +257,6 @@ full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year"
 
 district <- district %>% 
   inner_join(full_expense, by=c("dname" = "district"))
-  
-
-## teacher pay data
-# pay_data <- function(city_data) {
-#   mean(city_data$teacher_pay)
-# }
-
-# paste(pay_data(), list(mend, pc, carmel, fremont, irvine)
 
 
 
