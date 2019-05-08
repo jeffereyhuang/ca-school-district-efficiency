@@ -157,6 +157,11 @@ pc_tsal <- pc %>%
 # free and reduced lunch
 
 fr_lunch <- fr_lunch %>% 
+  mutate(district_code = paste(county_code, district_code, sep="")) %>% 
+  select(district_code, district_name, low_grade, high_grade, enrollment, free_meal_count_k_12, frpm_count_k_12) %>% 
+  group_by(district_code) %>% 
+  summarize(free_count = sum(free_meal_count_k_12), frpm_count = sum(frpm_count_k_12), enrollment = sum(enrollment_k_12)) %>% 
+  mutate(free_rate = free_count/enrollment, frpm_rate = frpm_count/enrollment) %>% 
   View()
   
 # maybe split admin and teachers
