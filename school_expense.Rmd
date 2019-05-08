@@ -156,13 +156,12 @@ pc_tsal <- pc %>%
 
 # free and reduced lunch
 
-fr_lunch <- fr_lunch %>% 
+frlunch_rate <- frlunch %>% 
   mutate(district_code = paste(county_code, district_code, sep="")) %>% 
-  select(district_code, district_name, low_grade, high_grade, enrollment, free_meal_count_k_12, frpm_count_k_12) %>% 
   group_by(district_code) %>% 
   summarize(free_count = sum(free_meal_count_k_12), frpm_count = sum(frpm_count_k_12), enrollment = sum(enrollment_k_12)) %>% 
   mutate(free_rate = free_count/enrollment, frpm_rate = frpm_count/enrollment) %>% 
-  View()
+  select(district_code, enrollment, free_rate, frpm_rate)
   
 # maybe split admin and teachers
 
@@ -202,50 +201,83 @@ add_staff <- staff %>%
        years_teaching, years_in_district, fte_teaching, fte_administrative, fte_pupil_services) %>% 
   group_by(district_code) %>% 
   summarize(avg_t_age = mean(age), t_exp = mean(years_teaching), dist_exp = mean(years_in_district), num_staff = n()) %>% 
-  left_join(count_admin, by="district_code") %>% 
-  left_join(count_teach, by="district_code")
+  full_join(count_admin, by="district_code") %>% 
+  full_join(count_teach, by="district_code")
+
+
+
+
+
+
+
 
 # full staff addtl info
 
-full_staff <- left_join(n_edu_staff, add_staff, by="district_code")
+full_staff <- full_join(n_edu_staff, add_staff, by="district_code") %>% 
+  full_join(frlunch_rate, b="district_code")
+
+
+
+
+
+
 
 
 # merge SAT dataset
 
-full_sat <- bind_rows(sat15, sat16, .id="year") %>%
-  drop_na(sname, enroll12, avg_scr_read, avg_scr_math) %>% 
-  mutate(sat_comp = as.numeric(avg_scr_read) + as.numeric(avg_scr_math), 
-         sat_score = as.numeric(num_tst_takr) * comp) %>% 
-  mutate(sat_test_per = as.numeric(num_tst_takr) / as.numeric(enroll12)) %>%
-  select(1:8, sat_comp, sat_score, sat_test_per, -rtype)
+full_sat <- bind_rows(sat15, sat16, .id="year")
+full_sat[, 7:11] <- sapply(full_sat[, 7:11], as.numeric)
+
+full_sat <- full_sat %>%
+  mutate(sat_comp = avg_scr_read + avg_scr_math,
+         sat_score = num_tst_takr * sat_comp,
+         district_code = substr(cds, 1, 7)) %>% 
+  select(1:8, sat_comp, sat_score, district_code, -rtype) %>% 
+  drop_na(sat_comp, sat_score)
 
 # merge AP dataset
 
 full_ap <- bind_rows(ap15, ap16, ap17, ap18, .id="year") %>%
-  drop_na(sname, enroll12) %>% 
-  mutate(ap_45 = num_scr4 + num_scr5, 
-         num_tst = num_scr1 + num_scr2 + num_scr3 + num_scr4 + num_scr5) %>% 
-  mutate(ap_test_per = as.numeric(num_tst_takr) / as.numeric(enroll12)) %>% 
-  select(1:8, ap_45, num_tst, ap_test_per, -rtype)
+  mutate(num_tst = num_scr1 + num_scr2 + num_scr3 + num_scr4 + num_scr5,
+         score = num_scr1 * 1 + num_scr2 * 2 + num_scr3 * 3 + num_scr4 * 4 + num_scr5 * 5,
+         district_code = substr(cds, 1, 7)) %>% 
+  select(1:8, num_tst, score, district_code, -rtype) %>% 
+  drop_na(score, num_tst)
 
 
 # create composite scores by averaging each of the different scores, and create a "score" variable representing total score (to be added and divided at the district level later)
 
 full_act <- bind_rows(act15, act16, act17, act18, .id="year") %>% 
   drop_na(sname, enroll12) %>% 
-  mutate(comp = (avg_scr_eng + avg_scr_math + avg_scr_read + avg_scr_sci)/4, score = comp * num_tst_takr) %>% 
+  mutate(comp = (avg_scr_eng + avg_scr_math + avg_scr_read + avg_scr_sci)/4, 
+         score = comp * num_tst_takr,
+         district_code = substr(cds, 1, 7)) %>% 
   mutate(test_per = num_tst_takr / enroll12) %>%
-  select(1:8, comp, score, test_per, -rtype)
+  select(1:8, comp, score, test_per, district_code, -rtype)
+
+
 
 # district ranks. make sure that there are sufficient test takers (to prevent large outliers). Create a participation rate by dividing num of ACT test takers by 12th grade enrollment. not an meaningful rate by itself (all grades take the test), but it is a proxy for how many students are in a school, and how many take the test. used a percentile rank to avoid minor errors in this methodology
 
-district <- full_act %>% 
+district_act <- full_act %>% 
   drop_na(test_per, comp) %>% 
-  group_by(dname) %>% 
-  filter(num_tst_takr > 5) %>% 
-  summarize(test_per = mean(num_tst_takr)/mean(enroll12), avg_comp = sum(score)/sum(num_tst_takr)) %>%
+  group_by(district_code, dname) %>% 
+  summarize(act_test_per = mean(num_tst_takr)/mean(enroll12), act_avg_comp = sum(score)/sum(num_tst_takr)) %>%
   ungroup() %>% 
-  mutate(part_rank = ntile(test_per, 100), comp_rank = ntile(avg_comp, 100))
+  mutate(act_part_rank = ntile(act_test_per, 100), act_comp_rank = ntile(act_avg_comp, 100))
+
+district_sat <- full_sat %>% 
+  group_by(district_code, dname) %>% 
+  summarize(sat_test_per = mean(num_tst_takr)/mean(enroll12), sat_avg_comp = sum(sat_score)/sum(num_tst_takr)) %>%
+  ungroup() %>% 
+  mutate(sat_part_rank = ntile(sat_test_per, 100), sat_comp_rank = ntile(sat_avg_comp, 100))
+
+district_ap <- full_ap %>%
+  group_by(district_code, dname) %>% 
+  summarize(ap_test_per = mean(num_tst)/mean(enroll1012), ap_avg_score = sum(score)/sum(num_tst)) %>%
+  ungroup() %>% 
+  mutate(ap_part_rank = ntile(ap_test_per, 100), ap_score_rank = ntile(ap_avg_score, 100))
+
 
 
 
@@ -254,20 +286,32 @@ district <- full_act %>%
 full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year") %>% 
   filter(! district %in% c("Statewide", "Statewide Totals")) %>%
   filter(lea_type == "Unified") %>% 
-  group_by(district) %>% 
+  mutate(district_code = paste(co, cds, sep="")) %>% 
+  group_by(district_code, district) %>% 
   summarize(d_spend = sum(current_expense_ada)) %>% 
-  mutate(expense_rank = ntile(desc(d_spend), 100)) 
+  mutate(expense_rank = ntile(desc(d_spend), 100))
+
+
+
+
+district <- full_join(district_sat, district_act, by="district_code") %>% 
+  full_join(district_ap, by="district_code")
+
+
 
 # merged the two datasets to perform more analysis
 
 district <- district %>% 
-  inner_join(full_expense, by=c("dname" = "district"))
-
+  inner_join(full_expense, by="district_code") %>% 
+  select(-'dname.x', -'dname.y', -district)
 
 
 ```
 
 ```{r}
+
+
+
 
 # creating tables for later
 
@@ -279,7 +323,9 @@ part <- district %>%
   arrange(desc(part_rank)) %>% 
   head(10)
 
-comp <- district %>% 
+comp <- district %>%
+    # comp_rank = mean(sat_comp_rank, act_comp_rank, ap_comp_rank) %>% 
+# 
   arrange(desc(comp_rank)) %>% 
   head(10)
 
