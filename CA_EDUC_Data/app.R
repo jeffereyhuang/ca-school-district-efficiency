@@ -21,6 +21,7 @@ expense <- read_rds("expense.rds")
 part <- read_rds("part.rds")
 comp <- read_rds("comp.rds")
 eff <- read_rds("efficiency.rds")
+top3 <- read_rds("top3.rds")
 
 
 # background research
@@ -113,10 +114,12 @@ ui <- navbarPage("CA HS Education Stats",
               
 )
 
-# page 1: horizontal bar chart of diff characteristics
-# page 2: search school statistics
-# page 3: deep dives into edge cases
-# page 4: efficiency stats
+# page 1: Search School District - 
+# page 2: Top Performers, Top Spenders
+# page 3: Most Efficient School Districts Table
+# page 4: Deep Dive into Efficiency Stats
+# teaching statistics, free and reduced lunch rates, spend, comp, part, rank
+
 
 
 
