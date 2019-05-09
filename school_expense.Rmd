@@ -13,12 +13,14 @@ library(readxl)
 library(janitor)
 library(ggplot2)
 library(gt)
-library(lmtest)
+library(reshape2)
+library(ggthemes)
 ```
 
 ```{r download, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 
 # SAT download data
+
 sat16 <- read_xls("data/sat16.xls") %>% 
   clean_names() %>% 
   select(-year)
@@ -26,6 +28,7 @@ sat15 <- read_xls("data/sat15.xls") %>%
   clean_names()
 
 # ACT download data
+
 act18 <- read_xls("data/act18.xls") %>% 
   clean_names() %>% 
   mutate_at(9:14, as.integer) %>% 
@@ -42,6 +45,7 @@ act15 <- read_xls("data/act15.xls") %>%
   select(-year)
 
 # AP scores download data
+
 ap18 <- read_xls("data/ap18.xls") %>% 
   clean_names() %>% 
   select(-year) %>% 
@@ -61,6 +65,7 @@ ap15 <- read_xls("data/ap15.xls") %>%
   mutate_at(6:13, as.integer)
 
 # per district expenses data — clean data to merge later
+
 expense18 <- read_xlsx("data/expense18.xlsx",
                        skip = 10) %>% 
   mutate(CDS = as.character(CDS)) %>% 
@@ -80,6 +85,8 @@ expense15 <- read_xls("data/expense15.xls",
 
 # Teacher Pay
 # teacher stats of most efficient school districts
+# $61-74K - avg teacher salary
+
 carmel <- read_csv("data/carmel-2015.csv") %>% 
   clean_names() %>% 
   filter(job_title == "Teacher")
@@ -92,20 +99,6 @@ pc <- read_csv("data/pc-2016.csv") %>%
   clean_names() %>% 
   filter(str_detect(tolower(job_title), "teacher"))
 
-# fontana & irvine - lot of act participation (fremont), irvine low spending ()
-
-# $61-74K - avg teacher salary
-
-# maybe fontana, other act performance is high grad despite low performance
-# maybe irvine has high teacher salary?
-
-font <- read_csv("data/fontana-unified-2016.csv") %>% 
-  clean_names() 
-
-
-irvine <- read_csv("data/irvine-unified-2016.csv") %>% 
-  clean_names()
-
 
 # frlunch - get free reduced lunch %  and enrollments and district code
 
@@ -114,14 +107,9 @@ frlunch <- read_xlsx("frlunch1819.xlsx", skip=1) %>%
 
 # staffdemo - teacher/student ratio, teachers with advanced degrees, age, years teaching, years_in_district
 
+
 staff <- read_tsv("StaffDemo17.txt") %>% 
   clean_names()
-
-# get grad rate and % meeting requirements if possible to import
-
-# hs_benchmark <- read_tsv("cohort1718.txt") %>%
-#   clean_names() %>%
-#   View()
 
 
 ```
@@ -129,29 +117,24 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 
 ```{r}
 
-# fontana & irvine - lot of act participation (fremont), irvine low spending ()
-
-# $61-74K - avg teacher salary
-
-# maybe fontana, other act performance is high grad despite low performance
-# maybe irvine has high teacher salary?
-
-font_tsal <- font %>% 
-  filter(str_detect(tolower(job_title), "teacher")) %>% 
-  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
-            
-irvine_tsal <- irvine %>%
-  filter(str_detect(tolower(job_title), "teacher")) %>% 
-  summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+# Cleaning data for most efficient schools
 
 carmel_tsal <- carmel %>% 
+  rename(District = agency) %>% 
+  group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
 mend_tsal <- mend %>% 
+  rename(District = agency) %>% 
+  group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
 pc_tsal <- pc %>% 
+  rename(District = agency) %>% 
+  group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
+
+addtl_schools <- bind_rows(carmel_tsal, mend_tsal, pc_tsal)
 
 
 # free and reduced lunch
@@ -163,7 +146,7 @@ frlunch_rate <- frlunch %>%
   mutate(free_rate = free_count/enrollment, frpm_rate = frpm_count/enrollment) %>% 
   select(district_code, enrollment, free_rate, frpm_rate)
   
-# maybe split admin and teachers
+# staff demographic info
 
 total <- staff %>% 
   group_by(district_code) %>% 
@@ -186,12 +169,12 @@ n_edu_staff <- new_staff %>%
 # staff characteristics
 
 count_teach <- staff %>% 
-  filter(fte_teaching > 70) %>% 
+  filter(fte_teaching > 60) %>% 
   group_by(district_code) %>% 
   summarize(teacher = n())
 
 count_admin <- staff %>% 
-  filter(fte_administrative > 70) %>% 
+  filter(fte_administrative > 40) %>% 
   group_by(district_code) %>% 
   summarize(admin = n())
 
@@ -208,16 +191,10 @@ add_staff <- staff %>%
 
 
 
-
-
-
 # full staff addtl info
 
 full_staff <- full_join(n_edu_staff, add_staff, by="district_code") %>% 
   full_join(frlunch_rate, b="district_code")
-
-
-
 
 
 
@@ -289,7 +266,9 @@ full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year"
   mutate(district_code = paste(co, cds, sep="")) %>% 
   group_by(district_code, district) %>% 
   summarize(d_spend = sum(current_expense_ada)) %>% 
+  ungroup() %>% 
   mutate(expense_rank = ntile(desc(d_spend), 100))
+
 
 
 
@@ -310,39 +289,126 @@ district <- district %>%
 
 ```{r}
 
+index <- district %>% 
+  mutate(comp_index = ((sat_comp_rank + act_comp_rank + ap_score_rank) / 3),
+         comp_rank = ntile(comp_index, 100),
+         part_index = ((sat_part_rank + act_part_rank + ap_part_rank) / 3),
+         part_rank = ntile(part_index, 100))
+  
+
+full_district_demo <- full_join(index, full_staff, by=c("district_code", "dname" = "district_name")) %>% 
+  select(-county_name) %>% 
+  drop_na(dname)
 
 
 
-# creating tables for later
 
-expense <- district %>% 
-  arrange(desc(expense_rank)) %>% 
-  head(10)
+# creating tables for later - pick interesting ones
 
-part <- district %>% 
-  arrange(desc(part_rank)) %>% 
-  head(10)
+expense <- full_district_demo %>% 
+  arrange(expense_rank) %>% 
+  head(20)
 
-comp <- district %>%
-    # comp_rank = mean(sat_comp_rank, act_comp_rank, ap_comp_rank) %>% 
-# 
-  arrange(desc(comp_rank)) %>% 
-  head(10)
+act_part <- full_district_demo %>% 
+  arrange(desc(act_part_rank)) %>% 
+  head(5)
+
+sat_part <- full_district_demo %>% 
+  arrange(desc(sat_part_rank)) %>% 
+  head(5)
+
+ap_part <- full_district_demo %>% 
+  arrange(desc(sat_part_rank)) %>% 
+  head(5)
+
+act_comp <- full_district_demo %>%
+  arrange(desc(act_comp_rank)) %>% 
+  head(5)
+
+sat_comp <- full_district_demo %>%
+  arrange(desc(sat_comp_rank)) %>% 
+  head(5)
+
+ap_comp <- full_district_demo %>%
+  arrange(desc(ap_score_rank)) %>% 
+  head(5)
+
 
 # metrics - creating the efficiency ranking, reorganizing for the table
 
-efficiency <- district %>% 
+
+
+efficiency <- full_district_demo %>% 
+  drop_na(sat_avg_comp, act_avg_comp, sat_test_per, act_test_per) %>% 
+  mutate(comp_rank = ntile(((sat_avg_comp +  act_avg_comp / 2) +  ap_avg_score)/ 2, 100),
+         part_rank = ntile(((sat_test_per +  act_test_per / 2) +  ap_test_per)/ 2, 100)) %>% 
   mutate(efficiency_rank = (4/12) * comp_rank + (3/12) * part_rank + (5/12) * expense_rank) %>% 
   arrange(desc(efficiency_rank)) %>% 
-  mutate(test_per = test_per * 100) %>% 
-  rename(District = dname, "Test Participation Rate"=test_per, 
-         "Avg. Composite Score" = avg_comp, 
+  mutate(act_test_per = act_test_per * 100,
+         sat_test_per = sat_test_per * 100,
+         ap_test_per = ap_test_per * 100) %>% 
+  rename(District = dname, "ACT Participation Rate"=act_test_per,
+         "SAT Participation Rate" = sat_test_per,
+         "AP Participation Rate" = ap_test_per,
+         "Avg. SAT Composite Score" = sat_avg_comp, 
+         "Avg. ACT Composite Score" = act_avg_comp,
+         "Avg. AP Score" = ap_avg_score,
          "Participation Percentile Rank"=part_rank, 
          "Composite Percentile Rank" = comp_rank, 
          "Per Pupil Spend" = d_spend,
          "Spend Percentile Rank" = expense_rank,
-         "Efficiency Index" = efficiency_rank) %>% 
-  head(20)
+         "Efficiency Index" = efficiency_rank) 
+
+
+# teacher sal + addtl info
+
+# staffdemo - teacher/student ratio, teachers with advanced degrees, age, years teaching, years_in_district
+# frlunch - get free reduced lunch %  and enrollments and district code
+
+most_eff <- efficiency %>% 
+  arrange(desc(`Efficiency Index`)) %>% 
+  head(3) %>% 
+  inner_join(addtl_schools, by="District")
+
+eff_tsal <- most_eff %>% 
+  select(District, total, base) %>% 
+  melt(id.vars = 'District')
+
+eff_ratio <- most_eff %>% 
+  mutate(admin_ratio_per100 = admin * 100 / enrollment,
+         admin_teach_per100 = admin * 100 / teacher) %>% 
+  select(District, admin_ratio_per100, admin_teach_per100, enrollment) %>% 
+  melt(id.vars='District')
+
+eff_adv <- most_eff %>% 
+  select(District, bach_per, mast_per, doc_per) %>% 
+  melt(id.vars='District') 
+
+eff_frpm <- most_eff %>% 
+  select(District, free_rate, frpm_rate) %>% 
+  melt(id.vars="District")
+
+eff_addtl <- most_eff %>% 
+  select(District, avg_t_age, t_exp, dist_exp) %>% 
+  melt(id.vars="District")
+
+
+eff_tsal %>% 
+  ggplot(aes(fill=District,x=variable, y=value)) +
+       geom_bar(position="dodge", stat="identity") +
+       theme_economist() +
+       labs(title="Teacher Salaries of the Most Efficient School Districts", x=NULL)
+
+
+
+# compare these schools to others around theme
+
+# test <- full_district_demo %>% 
+#   filter(dname %in% c("Morgan Hill Unified", "Fontana Unified") | str_detect(dname, "Norwalk"))
+
+
+
+
 
 # writing files out
 
