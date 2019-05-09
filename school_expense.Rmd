@@ -401,12 +401,16 @@ eff_tsal %>%
 
 
 
-# compare these schools to others around theme
+# poorest schools
 
-# test <- full_district_demo %>% 
-#   filter(dname %in% c("Morgan Hill Unified", "Fontana Unified") | str_detect(dname, "Norwalk"))
+# test1 <- full_district_demo %>% 
+#   filter(free_rate > .75 & expense_rank < 20)
 
+# test2 <- efficiency %>% 
+#   arrange(desc(`Efficiency Index`)) %>% 
+#   head(6)
 
+high_pov <- bind_rows(test1, test2, .id="status")
 
 
 
