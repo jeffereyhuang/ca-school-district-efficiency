@@ -204,8 +204,11 @@ server <- function(input, output) {
    
    output$bigPlotTable <- renderPlot({
      eff_corr <- eff %>% select(enrollment, District, admin_ratio_per100, mast_per, doc_per) %>% 
+       mutate(admin_ratio_per100 = 10* admin_ratio_per100,
+              mast_per = 100 * mast_per,
+              doc_per = 100 * doc_per) %>% 
        rename(`Enrollment`=enrollment,
-              `Admin to Student Ratio (per 100)` = admin_ratio_per100,
+              `Admin to Student Ratio (per 1,000)` = admin_ratio_per100,
               `Percent of Teachers with Masters'` = mast_per,
               `Percent of Teachers with Doctorates'` = doc_per
               )
@@ -218,7 +221,7 @@ server <- function(input, output) {
        facet_wrap(~variable, scales="free") +
        theme_economist() +
        theme(legend.position="none") + 
-       labs(title="Efficiency Correlates",x=NULL)
+       labs(title="Efficiency Correlates",x=NULL, y=NULL)
    })
    
    output$perfPlot <- renderPlot({
