@@ -15,6 +15,7 @@ library(gt)
 library(ggthemes)
 library(DT)
 library(scales)
+library(reshape2)
 
 # read in data
 
@@ -92,6 +93,12 @@ ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
             fluidPage(
               titlePanel("Spending & Performance: Not Always Correlated"),
               mainPanel(
+                "In both graphs shown below (ranked in order of top spending and top performance respectively), there are clearly districts that underperform given their per pupil
+                spend, as well as overperform given their spend.",
+            
+                br(),
+                br(),
+                br(),
                 plotOutput("spendPlot"),
                 br(),
                 br(),
