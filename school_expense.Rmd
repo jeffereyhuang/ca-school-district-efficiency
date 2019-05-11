@@ -306,35 +306,15 @@ full_district_demo <- full_join(index, full_staff, by=c("district_code", "dname"
   drop_na(dname)
 
 
-# creating tables for later - pick interesting ones
+# creating tables for later - pick interesting ones - chose ACT because it is typically the more correlative with schooling (not income)
 
 expense <- full_district_demo %>% 
-  arrange(expense_rank) %>% 
-  head(20)
+  arrange(desc(d_spend)) %>% 
+  head(10)
 
-act_part <- full_district_demo %>% 
-  arrange(desc(act_part_rank)) %>% 
-  head(5)
-
-sat_part <- full_district_demo %>% 
-  arrange(desc(sat_part_rank)) %>% 
-  head(5)
-
-ap_part <- full_district_demo %>% 
-  arrange(desc(sat_part_rank)) %>% 
-  head(5)
-
-act_comp <- full_district_demo %>%
-  arrange(desc(act_comp_rank)) %>% 
-  head(5)
-
-sat_comp <- full_district_demo %>%
-  arrange(desc(sat_comp_rank)) %>% 
-  head(5)
-
-ap_comp <- full_district_demo %>%
-  arrange(desc(ap_score_rank)) %>% 
-  head(5)
+comp <- full_district_demo %>% 
+  arrange(desc(act_avg_comp)) %>% 
+  head(10)
 
 
 # metrics - creating the efficiency ranking, reorganizing for the table
@@ -383,54 +363,52 @@ efficiency <- bind_rows(efficiency, average)
 # clean data for display
 
 most_eff <- efficiency %>% 
-  filter(District %in% c("Carmel Unified", "Mendocino Unified", "Piedmont City Unified", "Average Values")) %>% 
-  select(-sat_part_rank, -act_part_rank, -ap_part_rank, -ap_score_rank, -act_comp_rank, -sat_comp_rank, -`Spend Percentile Rank`, -bachelor, -doctor, -master, -admin, -teacher, -enrollment, -`Efficiency Index`, -comp_index, -part_index, -`Composite Percentile Rank`, -`Participation Percentile Rank`) %>% 
-  select(1:22)
+  select(-sat_part_rank, -act_part_rank, -ap_part_rank, -ap_score_rank, -act_comp_rank, -sat_comp_rank, -`Spend Percentile Rank`, -bachelor, -doctor, -master, -`Efficiency Index`, -comp_index, -part_index, -`Composite Percentile Rank`, -`Participation Percentile Rank`) %>% 
+  select(1:25)
+
+top3 <- efficiency %>% 
+  filter(District %in% c("Carmel Unified", "Mendocino Unified", "Piedmont City Unified", "Average Values"))
 
 
+# 
+# 
+eff_tsal <- top3 %>%
+  select(District, total, base) %>%
+  melt(id.vars = 'District')
 
-# 
-# 
-# eff_tsal <- most_eff %>% 
-#   select(District, total, base) %>% 
-#   melt(id.vars = 'District')
-# 
-# eff_ratio <- most_eff %>% 
-#   mutate(admin_ratio_per100 = admin * 100 / enrollment,
-#          admin_teach_per100 = admin * 100 / teacher) %>% 
-#   select(District, admin_ratio_per100, admin_teach_per100, enrollment) %>% 
-#   melt(id.vars='District')
-# 
-# eff_adv <- most_eff %>% 
-#   select(District, bach_per, mast_per, doc_per) %>% 
-#   melt(id.vars='District') 
-# 
-# eff_frpm <- most_eff %>% 
-#   select(District, free_rate, frpm_rate) %>% 
-#   melt(id.vars="District")
-# 
-# eff_addtl <- most_eff %>% 
-#   select(District, avg_t_age, t_exp, dist_exp) %>% 
-#   melt(id.vars="District")
-# 
-# eff_addtl <- most_eff
-# 
-# 
-# eff_tsal %>% 
-#   ggplot(aes(fill=District,x=variable, y=value)) +
-#        geom_bar(position="dodge", stat="identity") +
-#        theme_economist() +
-#        labs(title="Teacher Salaries of the Most Efficient School Districts", x=NULL)
-# 
+eff_ratio <- top3 %>%
+  mutate(admin_ratio_per100 = admin * 1000 / enrollment,
+         admin_teach_per100 = admin * 100 / teacher) %>%
+  select(District, admin_ratio_per100, admin_teach_per100) %>%
+  melt(id.vars='District')
 
+eff_adv <- top3 %>%
+  select(District, bach_per, mast_per, doc_per) %>%
+  melt(id.vars='District')
+
+eff_frpm <- top3 %>%
+  select(District, free_rate, frpm_rate) %>%
+  melt(id.vars="District")
+
+eff_addtl <- top3 %>%
+  select(District, avg_t_age, t_exp, dist_exp) %>%
+  melt(id.vars="District")
+
+select_eff <- most_eff %>% arrange(District)
 
 
 # writing files out
 
 write_rds(expense, "CA_EDUC_Data/expense.rds")
-write_rds(part, "CA_EDUC_Data/part.rds")
 write_rds(comp, "CA_EDUC_Data/comp.rds")
-write_rds(efficiency, "CA_EDUC_Data/efficiency.rds")
-write_rds(most_eff, "CA_EDUC_Data/top3.rds")
+write_rds(most_eff, "CA_EDUC_Data/efficiency.rds")
+write_rds(top3, "CA_EDUC_Data/top3.rds")
+write_rds(eff_tsal, "CA_EDUC_Data/eff_tsal.rds")
+write_rds(eff_ratio, "CA_EDUC_Data/eff_ratio.rds")
+write_rds(eff_adv, "CA_EDUC_Data/eff_adv.rds")
+write_rds(eff_frpm, "CA_EDUC_Data/eff_frpm.rds")
+write_rds(eff_addtl, "CA_EDUC_Data/eff_addtl.rds")
+write_rds(select_eff, "CA_EDUC_DATA/select_eff.rds")
+
 ```
 

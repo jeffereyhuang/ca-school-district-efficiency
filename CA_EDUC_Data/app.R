@@ -14,26 +14,21 @@ library(janitor)
 library(gt)
 library(ggthemes)
 library(DT)
+library(scales)
 
 # read in data
 
 expense <- read_rds("expense.rds")
-part <- read_rds("part.rds")
 comp <- read_rds("comp.rds")
 eff <- read_rds("efficiency.rds")
 top3 <- read_rds("top3.rds")
+eff_tsal <- read_rds("eff_tsal.rds")
+eff_ratio <- read_rds("eff_ratio.rds")
+eff_adv <- read_rds("eff_adv.rds")
+eff_frpm <- read_rds("eff_frpm.rds")
+eff_addtl <- read_rds("eff_addtl.rds")
+select_eff <- read_rds("select_eff.rds")
 
-
-# background research
-#Technical efficiency
-#  We also investigate possible factors
-# associated with inefficiency. The percentage of student enrollment that qualifies as low
-# income and the size of the school district are positively related to inefficiency. School
-# districts that have a larger percentage of teachers with advanced degrees are more
-# efficient. Having a lower ratio of students per administrator in a school district increases
-# technical efficiency.
-
-# Efficiency Analysis of K-12 Public Education in Illinois 
 
 
 
@@ -42,10 +37,46 @@ top3 <- read_rds("top3.rds")
 
 # Define UI for application that draws a histogram
 
-ui <- navbarPage("CA HS Education Stats",
+ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
    
   
    # different tabs
+   
+   tabPanel("Explore School Districts",
+            
+            fluidPage(
+              
+              # Application title
+              
+              titlePanel("School District Stats"),
+              
+              
+              mainPanel(
+                
+                selectInput("sdistrict", 
+                            "Please select a CA school district to view.",
+                            select_eff$District),
+                br(),
+                br(),
+
+
+                DTOutput("comparisonTable"),
+
+                br(),
+                br(),
+                br(),
+                br(),
+                br(),
+                br(),
+
+
+
+                plotOutput("bigPlotTable")
+
+                # br()
+              )
+            )
+   ),
    
    tabPanel("Most Efficient",
             fluidPage(
@@ -56,45 +87,58 @@ ui <- navbarPage("CA HS Education Stats",
             )
             
    ),
-   tabPanel("Top Spenders",
+   tabPanel("Spending and Performance",
             fluidPage(
-              titlePanel("ACT Performance - Percentile Rank"),
+              titlePanel("Spending & Performance: Not Always Correlated"),
               mainPanel(
-                plotOutput("spendPlot")
+                plotOutput("spendPlot"),
+                br(),
+                br(),
+                br(),
+                plotOutput("perfPlot")
               )
               
             )
     ),
+   
+   tabPanel("Deep Dive - Most Efficient Schools",
+            fluidPage(
+              titlePanel("Top 3 Schools - Other School Characteristics"),
+              mainPanel(
+                "Literature on school efficiency done by Melvin and Sharma suggests that efficient schools can be defined by the ratio of students/administrators.
+                This provides an alternative definition than the spending efficiency that I am exploring by examining spending and performance outcomes. However, I 
+                wanted to see if these two measures of efficiency are correlated at all. Melvin and Sharma poses additional correlative factors for efficiency such as
+                percent of low income students and percent of teachers with advanced degrees, which are among the factors examined here.",
+                br(),
+                br(),
+                selectInput("col", 
+                            "Please select a characteristic to view.",
+                            c("Teacher Salary", "Admin", "Teacher Education", "Teacher Experience", "Free & Reduced Lunch")),
+                br(),
+                br(),
+                
+                plotOutput("deepDive")
+                # br(),
+                # br(),
+                # br(),
+                # plotOutput("perfPlot")
+              )
               
+            )
+   ),
               
-  tabPanel("Top Performers",
-           fluidPage(
-             titlePanel("Per Pupil Spending of Top Performing Districs"),
-             mainPanel(
-               plotOutput("perfPlot")
-             )
-           )
-          
-  ),
-
-  tabPanel("Top Participation",
-           fluidPage(
-             titlePanel("Performance of Top Participation Districts"),
-             mainPanel(
-               plotOutput("partPlot")
-             )
-           )
-           
-  ),
+  
   
   tabPanel("About",
            fluidPage(
              titlePanel("About This Project"),
              mainPanel(
-               "Much of recent scholarship and political debate regarding education has focused on money and outcomes.
-               This project was created to explore some of those trends. I have aggregated data across different sources 
-               from the California Department of Education, as well as Transparent California. Data for the ACT is a 4 year average
-               from 2015-2018, while SAT data is an average from 2015-2018.",
+               "Much of recent scholarship and political debate regarding education has focused on money and outcomes, as well as efficiency of this spending.
+               This project was created to explore some of those trends and correlations. I have aggregated data across different sources 
+               from the California Department of Education, as well as Transparent California. Data for  ACTand AP scores is a 4 year average
+               from 2015-2018, while SAT data is an average from 2015-2016. Per pupil spending is also an average across four years. 
+               All other data for school district demographics are from the 2017 school year, while teacher salaries for Mendocino Unified, 
+               Carmel Unified, and Piedmont City Unified are from 2017, 2015, and 2016 (due to data constraints).",
                
                br(),
                br(),
@@ -105,7 +149,8 @@ ui <- navbarPage("CA HS Education Stats",
                br(),
                
                "Special thanks to both the CA Department of Education and Transparent CA for aggregating and publishing—this project would not be possible without your help. Additionally, 
-               thank you to Data is Plural for pointing me to this dataset."
+               thank you to Data is Plural for pointing me to this dataset. Additional thanks to Preceptor David Kane as well as Albert Rivero and Jacob Brown, for giving me
+               the tools to carry out this project."
              )
            )
            
@@ -128,15 +173,50 @@ ui <- navbarPage("CA HS Education Stats",
 server <- function(input, output) {
    
    output$spendPlot <- renderPlot({
-      ggplot(expense, aes(x=dname,y=comp_rank)) +
+      expense %>% mutate(dname = fct_reorder(dname, d_spend)) %>% 
+      ggplot(aes(x=dname,y=comp_rank)) +
       geom_bar(stat="identity") + 
       coord_flip() +
       theme_economist() +
       labs(title="Top 10 Highest Spending Districts - ACT Performance", y="Percentile Rank for ACT Scores",x=NULL)
    })
    
+   output$comparisonTable <- renderDT({
+     eff %>% filter(District %in% c(input$sdistrict, "Average Values")) %>% 
+     select(District, `Per Pupil Spend`, `Avg. SAT Composite Score`, `Avg. ACT Composite Score`, `Avg. AP Score`) %>% 
+     datatable(rownames=FALSE,
+               class="display",
+               options=list(dom="t")) %>%
+       formatRound(c(3), 0) %>% 
+       formatRound(c(4:5), 1) %>% 
+       formatCurrency("Per Pupil Spend", "$", digits = 0)
+       
+     
+   })
+   
+   output$bigPlotTable <- renderPlot({
+     eff_corr <- eff %>% select(enrollment, District, admin_ratio_per100, mast_per, doc_per) %>% 
+       rename(`Enrollment`=enrollment,
+              `Admin to Student Ratio (per 100)` = admin_ratio_per100,
+              `Percent of Teachers with Masters'` = mast_per,
+              `Percent of Teachers with Doctorates'` = doc_per
+              )
+  
+     eff_corr %>% filter(District %in% c(input$sdistrict, "Average Values")) %>% 
+     melt(id.vars='District') %>% 
+       
+     ggplot(aes(x=District,y=value, fill=District), show.legend=FALSE) +
+       geom_bar(stat="identity", width = 0.5) +
+       facet_wrap(~variable, scales="free") +
+       theme_economist() +
+       theme(legend.position="none") + 
+       labs(title="Efficiency Correlates",x=NULL)
+   })
+   
    output$perfPlot <- renderPlot({
-     ggplot(comp, aes(x=dname, y=expense_rank)) +
+     comp %>% mutate(dname = fct_reorder(dname, act_avg_comp)) %>% 
+                     
+     ggplot(aes(x=dname, y=expense_rank)) +
        geom_bar(stat="identity") +
        coord_flip() + 
        theme_economist() +
@@ -144,22 +224,58 @@ server <- function(input, output) {
      
    })
    
-   output$partPlot <- renderPlot({
-     ggplot(part, aes(x=dname, y=comp_rank)) +
-       geom_bar(stat="identity") +
-       coord_flip() + 
-       theme_economist() +
-       labs(title="Composition Score Percentile Rank of Districts with Highest ACT Participation", y="Percentile Rank in ACT Composite Score", x=NULL)
-     
-   })
-   
    output$effTable <- renderDT({
-      datatable(eff,
+      datatable(top3,
                 class="display",
                 options=list(dom="t")) %>%
                 formatRound(c(1:8), 1)
+   }) 
 
-     
+   output$deepDive <- renderPlot({
+     if(input$col == "Teacher Salary") {
+       ggplot(eff_tsal, aes(x=variable,y=value, fill=District)) +
+         geom_bar(stat="identity", position="dodge") + 
+         theme_economist() +
+         scale_y_continuous(labels = dollar, breaks = c(30000, 60000, 90000, 120000)) +
+         labs(title="Teacher Salaries", y="Salary",x=NULL) + 
+         theme(legend.title=element_blank(), legend.position = "bottom")
+     }
+     else if(input$col == "Admin") {
+       ggplot(eff_ratio, aes(x=variable,y=value, fill=District)) +
+         geom_bar(stat="identity", position="dodge") + 
+         theme_economist() +
+         scale_y_continuous(breaks = c(0, 3, 6, 9, 12)) +
+         labs(title="Administrative Ratios - Students and Teachers", y="Admin",x=NULL) +
+         theme(legend.title=element_blank(), legend.position = "bottom")
+       
+     }
+     else if(input$col == "Teacher Experience") {
+       ggplot(eff_addtl, aes(x=variable,y=value, fill=District)) +
+         geom_bar(stat="identity", position="dodge") + 
+         theme_economist() +
+         labs(title="Teacher Experience", y="Years",x=NULL) +
+         theme(legend.title=element_blank(), legend.position = "bottom")
+       
+     }
+     else if(input$col == "Teacher Education") {
+       eff
+       ggplot(eff_adv, aes(x=variable,y=value, fill=District)) +
+         geom_bar(stat="identity", position="dodge") + 
+         theme_economist() +
+         scale_y_continuous(labels=percent) +
+         labs(title="Teacher Education", y="Percent",x=NULL) +
+         theme(legend.title=element_blank(), legend.position = "bottom")
+       
+     }
+     else if(input$col == "Free & Reduced Lunch") {
+       ggplot(eff_frpm, aes(x=variable,y=value, fill=District)) +
+         geom_bar(stat="identity", position="dodge") + 
+         theme_economist() +
+         scale_y_continuous(labels= percent) +
+         labs(title="Percent of Students on Free and Reduced Lunch", y="Percent",x=NULL) +
+         theme(legend.title=element_blank(), legend.position = "bottom")
+       
+     }
    })
 }
 
