@@ -369,6 +369,9 @@ most_eff <- efficiency %>%
 top3 <- efficiency %>% 
   filter(District %in% c("Carmel Unified", "Mendocino Unified", "Piedmont City Unified", "Average Values"))
 
+top10 <- efficiency %>% 
+  arrange(desc(`Efficiency Index`))
+
 
 # 
 # 
@@ -403,6 +406,7 @@ write_rds(expense, "CA_EDUC_Data/expense.rds")
 write_rds(comp, "CA_EDUC_Data/comp.rds")
 write_rds(most_eff, "CA_EDUC_Data/efficiency.rds")
 write_rds(top3, "CA_EDUC_Data/top3.rds")
+write_rds(top10, "CA_EDUC_Data/top10.rds")
 write_rds(eff_tsal, "CA_EDUC_Data/eff_tsal.rds")
 write_rds(eff_ratio, "CA_EDUC_Data/eff_ratio.rds")
 write_rds(eff_adv, "CA_EDUC_Data/eff_adv.rds")

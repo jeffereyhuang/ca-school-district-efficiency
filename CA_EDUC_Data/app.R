@@ -22,6 +22,7 @@ expense <- read_rds("expense.rds")
 comp <- read_rds("comp.rds")
 eff <- read_rds("efficiency.rds")
 top3 <- read_rds("top3.rds")
+top10 <- read_rds("top10.rds")
 eff_tsal <- read_rds("eff_tsal.rds")
 eff_ratio <- read_rds("eff_ratio.rds")
 eff_adv <- read_rds("eff_adv.rds")
@@ -80,7 +81,7 @@ ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
    
    tabPanel("Most Efficient",
             fluidPage(
-              titlePanel("20 Most Efficient School Districts"),
+              titlePanel("10 Most Efficient School Districts"),
               mainPanel(
                 DTOutput("effTable")
               )
@@ -225,7 +226,9 @@ server <- function(input, output) {
    })
    
    output$effTable <- renderDT({
-      datatable(top3,
+     top10 %>% select(District, "Composite Percentile Rank", "Participation Percentile Rank", "Spend Percentile Rank", "Efficiency Index") %>% 
+      datatable(
+                rownames=FALSE,
                 class="display",
                 options=list(dom="t")) %>%
                 formatRound(c(1:8), 1)
