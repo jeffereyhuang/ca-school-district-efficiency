@@ -303,7 +303,8 @@ index <- district %>%
 
 full_district_demo <- full_join(index, full_staff, by=c("district_code", "dname" = "district_name")) %>% 
   select(-county_name) %>% 
-  drop_na(dname)
+  drop_na(dname) %>% 
+  distinct(dname, district_code, .keep_all=TRUE)
 
 
 # creating tables for later - pick interesting ones - chose ACT because it is typically the more correlative with schooling (not income)
