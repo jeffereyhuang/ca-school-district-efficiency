@@ -1,4 +1,4 @@
-# california-county-education-data
+# California School District Efficiency Data
 
 Live results of this project can be found here: https://jeffereyhuang.shinyapps.io/ca-edu-spend-effects/.
 
