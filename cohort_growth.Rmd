@@ -1,0 +1,53 @@
+---
+title: "Growth Measures"
+author: "Jeff Huang"
+date: "7/27/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+
+growth_data <- read.csv("data/CA_SEDA_long.csv") 
+
+```
+
+```{r}
+
+# 3-8
+# 3-8 math
+# 3-8 english
+# 3-5
+# 5-8
+
+# would merge diff cohorts
+# first look at cohorts and identify big jumps - distr at each grade
+# 
+
+
+# large jumps, large 
+
+```
+
+```{r}
+
+# EDA
+
+generic <- growth_data %>% 
+  select(1:9, -fips, -stateabb)
+
+for (i in 3:8) {
+  data = subset(generic, grade == i)
+  print(ggplot(data, aes(mn_all, color = subject)) +
+  geom_density() + 
+  labs(title = paste("Distribution of students in grade", i, sep = " ")) + 
+  scale_x_continuous(name = "Achievement Level",
+                           breaks = 0:15,
+                           limits=c(0, 15)))
+}
+
+```
+
