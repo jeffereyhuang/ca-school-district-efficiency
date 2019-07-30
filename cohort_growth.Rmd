@@ -15,7 +15,7 @@ growth_data <- read.csv("data/CA_SEDA_long.csv")
 
 ```
 
-```{r}
+```{r function definition}
 
 # 3-8
 # 3-8 math
@@ -23,16 +23,52 @@ growth_data <- read.csv("data/CA_SEDA_long.csv")
 # 3-5
 # 5-8
 
+single_calc <- function (low_grade, high_grade) {
+  ela_diff = high_grade$ela - low_grade$ela
+  math_diff = high_grade$math - low_grade$math
+  return(tuple(math_diff, ela_diff))
+}
+
+merged_calc <- function (low_grade, high_grade) {
+  low_grade %>% mutate(score = mean(ela, math))
+  high_grade %>% mutate(score = mean(ela, math))
+  return (high_grade$score - low_grade$score)
+}
+
+
+test <- growth_data %>% 
+  filter(grade %in% c(3,8)) %>% 
+  group_by(leaidC, grade, year, subject) %>% 
+  mutate()
+  View()
+  mutate(`5yr`= )
+
+
+
+# for row in nrows(dataset):
+#   if i > 0:
+#     single or merged calc
+#   else mutate(empty)
+# 
+# 
+# eda on jumps
+
+
 # would merge diff cohorts
 # first look at cohorts and identify big jumps - distr at each grade
 # 
-
+# jumps by cohort
+# 
+# then avg across cohort, but between subjects to get avg mnall
+# 
+# 
+# then merge w other group, and do rf on efficiency - & on gaps
 
 # large jumps, large 
 
 ```
 
-```{r}
+```{r density distribution}
 
 # EDA
 
@@ -50,4 +86,12 @@ for (i in 3:8) {
 }
 
 ```
+
+
+```{r}
+
+
+# match 3 & 5
+```
+
 

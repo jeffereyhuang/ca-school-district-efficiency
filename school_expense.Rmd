@@ -2,7 +2,7 @@
 title: "School Expenses"
 author: "Jeff Huang"
 date: "4/27/2019"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -114,7 +114,7 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 ```
 
 
-```{r}
+```{r top3_cleaning}
 
 # Cleaning data for most efficient schools: aggregate to the district averages
 
@@ -289,7 +289,7 @@ district <- district %>%
 
 ```
 
-```{r}
+```{r indexes}
 
 # create indexes for sorting later
 
@@ -361,6 +361,10 @@ average$District <- "Average Values"
 efficiency <- bind_rows(efficiency, average)
 
 
+```
+
+``` {r cleaning_graphs}
+
 # clean data for display
 
 most_eff <- efficiency %>% 
@@ -414,6 +418,24 @@ eff_addtl <- top3 %>%
 
 select_eff <- most_eff %>% arrange(District)
 
+
+
+library(gt)
+top10
+top10 <- top10 %>% 
+  select(District, `Spend Percentile Rank`, `Composite Percentile Rank`, `Participation Percentile Rank`, `Efficiency Index`) %>% 
+  head(10)
+  
+gt(top10) %>% 
+  tab_header(
+    title= "Most Efficient CA School Districts") %>% 
+  fmt_number(columns = c(2:5),
+             decimals = 1)
+```
+
+
+
+``` {r write}
 
 # writing files out
 
