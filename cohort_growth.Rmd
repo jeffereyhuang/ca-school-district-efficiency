@@ -13,7 +13,27 @@ library(ggplot2)
 
 growth_data <- read.csv("data/CA_SEDA_long.csv") 
 
+clean_growth <- growth_data %>% 
+  mutate(cohort = year - grade) %>% 
+  select(leaidC, leaname, grade, year, subject, mn_all, cohort)
+
 ```
+
+```{r density distribution}
+
+# EDA
+for (i in 3:8) {
+  data = subset(clean_growth, grade == i)
+  print(ggplot(data, aes(mn_all, color = subject)) +
+  geom_density() + 
+  labs(title = paste("Distribution of students in grade", i, sep = " ")) + 
+  scale_x_continuous(name = "Achievement Level",
+                           breaks = 0:15,
+                           limits=c(0, 15)))
+}
+
+```
+
 
 ```{r function definition}
 
@@ -21,37 +41,79 @@ growth_data <- read.csv("data/CA_SEDA_long.csv")
 # 3-8 math
 # 3-8 english
 # 3-5
-# 5-8
+# 6-8
 
-single_calc <- function (low_grade, high_grade) {
-  ela_diff = high_grade$ela - low_grade$ela
-  math_diff = high_grade$math - low_grade$math
-  return(tuple(math_diff, ela_diff))
-}
+# 3rd - 8th grade growth - math, ela, and mixed growth
+  
+cohort_3_8 <- clean_growth %>% 
+  select(-year) %>% 
+  filter(cohort == 2007) %>% 
+  filter(grade %in% c(3, 8)) %>% 
+  spread(grade, mn_all) %>% 
+  mutate(growth = `8`-`3`) %>% 
+  drop_na(growth) %>% 
+  select(leaidC, leaname, subject, growth) %>% 
+  spread(subject, growth) %>%
+  group_by(leaidC, leaname) %>% 
+  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
 
-merged_calc <- function (low_grade, high_grade) {
-  low_grade %>% mutate(score = mean(ela, math))
-  high_grade %>% mutate(score = mean(ela, math))
-  return (high_grade$score - low_grade$score)
-}
+# graph of ela and math growth
 
-
-test <- growth_data %>% 
-  filter(grade %in% c(3,8)) %>% 
-  group_by(leaidC, grade, year, subject) %>% 
-  mutate()
-  View()
-  mutate(`5yr`= )
-
+ggplot(cohort_3_8) + 
+  geom_point(aes(x=math, y=ela))
 
 
-# for row in nrows(dataset):
-#   if i > 0:
-#     single or merged calc
-#   else mutate(empty)
+cohort_3_5 <- clean_growth %>% 
+  filter(grade %in% c(3, 5)) 
+
+%>% 
+  spread(grade, mn_all) %>% 
+  mutate(growth = `8`-`3`) %>% 
+  drop_na(growth) %>% 
+  select(leaidC, leaname, subject, growth) %>% 
+  spread(subject, growth) %>%
+  group_by(leaidC, leaname) %>% 
+  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
+
+
+cohort_6_8 <- clean_growth %>% 
+  filter(grade %in% c(6, 8)) 
+
+%>% 
+  spread(grade, mn_all) %>% 
+  mutate(growth = `8`-`3`) %>% 
+  drop_na(growth) %>% 
+  select(leaidC, leaname, subject, growth) %>% 
+  spread(subject, growth) %>%
+  group_by(leaidC, leaname) %>% 
+  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
+
+
+
+# sanity check, what if the grade is just really smart?
+# sanity check, big jumps to measure leaving? good teacher?
+  # use the standardized dataset for this (this is standardized relative to distr. for cohort)
+
+
+
+# single_calc <- function (low_grade, high_grade) {
+#   ela_diff = high_grade$ela - low_grade$ela
+#   math_diff = high_grade$math - low_grade$math
+#   return(tuple(math_diff, ela_diff))
+# }
 # 
+# merged_calc <- function (low_grade, high_grade) {
+#   low_grade %>% mutate(score = mean(ela, math))
+#   high_grade %>% mutate(score = mean(ela, math))
+#   return (high_grade$score - low_grade$score)
+# }
 # 
-# eda on jumps
+# test <- growth_data %>% 
+#   filter(grade %in% c(3,8)) %>% 
+#   group_by(leaidC, grade, year, subject) %>% 
+#   mutate()
+#   View()
+#   mutate(`5yr`= )
 
 
 # would merge diff cohorts
@@ -66,32 +128,6 @@ test <- growth_data %>%
 
 # large jumps, large 
 
-```
-
-```{r density distribution}
-
-# EDA
-
-generic <- growth_data %>% 
-  select(1:9, -fips, -stateabb)
-
-for (i in 3:8) {
-  data = subset(generic, grade == i)
-  print(ggplot(data, aes(mn_all, color = subject)) +
-  geom_density() + 
-  labs(title = paste("Distribution of students in grade", i, sep = " ")) + 
-  scale_x_continuous(name = "Achievement Level",
-                           breaks = 0:15,
-                           limits=c(0, 15)))
-}
-
-```
-
-
-```{r}
-
-
-# match 3 & 5
 ```
 
 
