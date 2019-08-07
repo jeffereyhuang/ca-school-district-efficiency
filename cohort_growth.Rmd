@@ -37,17 +37,8 @@ for (i in 3:8) {
 
 ```{r function definition}
 
+# 1 year of data
 
-test <- clean_growth %>% 
-  filter(cohort == 2007, subject == "math") 
-# 3-8
-# 3-8 math
-# 3-8 english
-# 3-5
-# 6-8
-
-# 3rd - 8th grade growth - math, ela, and mixed growth
-  
 cohort_3_8 <- clean_growth %>% 
   select(-year) %>% 
   filter(cohort == 2007) %>% 
@@ -59,13 +50,10 @@ cohort_3_8 <- clean_growth %>%
   select(leaidC, leaname, cohort, subject, growth) %>% 
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
-  mutate(avg_growth_38yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(combined_38_growth = mean(c(ela, math), na.rm = TRUE))
 
-# graph of ela and math growth
 
-ggplot(cohort_3_8) + 
-  geom_point(aes(x=math, y=ela))
-
+# 4 years of data
 
 cohort_3_5 <- clean_growth %>% 
   select(-year) %>% 
@@ -78,13 +66,16 @@ cohort_3_5 <- clean_growth %>%
   select(leaidC, leaname, cohort, subject, growth) %>% 
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
-  mutate(ela = mean(ela), math = mean(math)) %>% 
-  mutate(avg_growth_35yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(ela_avg = mean(ela), math_avg = mean(math)) %>% 
+  mutate(combined_35_growth = mean(c(ela_avg, math_avg), na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  group_by(leaidC, leaname, cohort) %>% 
+  mutate(yearly_jump = mean(c(math, ela), na.rm = TRUE))
 
-
+# one year of data
 cohort_6_8 <- clean_growth %>% 
   select(-year) %>% 
-  filter(cohort == 2007) %>% 
+  filter(cohort == 2007) %>%
   filter(grade %in% c(6, 8)) %>% 
   spread(grade, mn_all) %>% 
   mutate(growth = `8`-`6`) %>% 
@@ -93,7 +84,8 @@ cohort_6_8 <- clean_growth %>%
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
   mutate(ela = mean(ela), math = mean(math)) %>% 
-  mutate(avg_growth_68yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(combined_68_growth = mean(c(ela, math), na.rm = TRUE))
+
 
 
 
@@ -101,39 +93,58 @@ cohort_6_8 <- clean_growth %>%
 # sanity check, big jumps to measure leaving? good teacher?
   # use the standardized dataset for this (this is standardized relative to distr. for cohort)
 
-
-
-# single_calc <- function (low_grade, high_grade) {
-#   ela_diff = high_grade$ela - low_grade$ela
-#   math_diff = high_grade$math - low_grade$math
-#   return(tuple(math_diff, ela_diff))
-# }
-# 
-# merged_calc <- function (low_grade, high_grade) {
-#   low_grade %>% mutate(score = mean(ela, math))
-#   high_grade %>% mutate(score = mean(ela, math))
-#   return (high_grade$score - low_grade$score)
-# }
-# 
-# test <- growth_data %>% 
-#   filter(grade %in% c(3,8)) %>% 
-#   group_by(leaidC, grade, year, subject) %>% 
-#   mutate()
-#   View()
-#   mutate(`5yr`= )
-
-
-# would merge diff cohorts
-# first look at cohorts and identify big jumps - distr at each grade
-# 
-# jumps by cohort
-# 
-# then avg across cohort, but between subjects to get avg mnall
-# 
-# 
 # then merge w other group, and do rf on efficiency - & on gaps
 
 # large jumps, large 
+
+```
+
+```{r sanity check graphs}
+
+# scatter of english vs math
+ggplot(cohort_3_5) + 
+  geom_point(aes(x=math_avg, y=ela_avg))
+
+ggplot(cohort_6_8) + 
+  geom_point(aes(x=math, y=ela))
+
+ggplot(cohort_3_8) + 
+  geom_point(aes(x=math, y=ela))
+
+# density of district growth
+
+ggplot(cohort_3_5) +
+  geom_density(aes(x=combined_35_growth))
+
+ggplot(cohort_6_8) +
+  geom_density(aes(x=combined_68_growth))
+
+ggplot(cohort_3_8) +
+  geom_density(aes(x=combined_38_growth))
+
+
+# additional cohort analysis
+
+# more data points for ela vs math growth
+ggplot(cohort_3_5) + 
+  geom_point(aes(x=math, y=ela))
+
+ggplot(cohort_3_5) + 
+  geom_density(aes(x=math)) + 
+  geom_density(aes(x=ela))
+
+
+# prevalence of large spikes 
+
+big_jumps <- cohort_3_5 %>% 
+  mutate(relative_spike = yearly_jump - combined_35_growth)
+
+ggplot(big_jumps) +
+  geom_point(aes(x=combined_35_growth, y=yearly_jump))
+
+ggplot(big_jumps) +
+  geom_density(aes(x=relative_spike))
+
 
 ```
 
