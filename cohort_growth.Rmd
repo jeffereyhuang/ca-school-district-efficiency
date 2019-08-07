@@ -37,6 +37,9 @@ for (i in 3:8) {
 
 ```{r function definition}
 
+
+test <- clean_growth %>% 
+  filter(cohort == 2007, subject == "math") 
 # 3-8
 # 3-8 math
 # 3-8 english
@@ -50,12 +53,13 @@ cohort_3_8 <- clean_growth %>%
   filter(cohort == 2007) %>% 
   filter(grade %in% c(3, 8)) %>% 
   spread(grade, mn_all) %>% 
+  drop_na(`3`, `8`) %>% 
   mutate(growth = `8`-`3`) %>% 
   drop_na(growth) %>% 
-  select(leaidC, leaname, subject, growth) %>% 
+  select(leaidC, leaname, cohort, subject, growth) %>% 
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
-  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(avg_growth_38yr = mean(c(ela, math), na.rm = TRUE))
 
 # graph of ela and math growth
 
@@ -64,29 +68,32 @@ ggplot(cohort_3_8) +
 
 
 cohort_3_5 <- clean_growth %>% 
-  filter(grade %in% c(3, 5)) 
-
-%>% 
+  select(-year) %>% 
+  filter(cohort %in% c(2006:2010)) %>% 
+  filter(grade %in% c(3, 5)) %>% 
   spread(grade, mn_all) %>% 
-  mutate(growth = `8`-`3`) %>% 
+  drop_na(`3`, `5`) %>% 
+  mutate(growth = `5`-`3`) %>% 
   drop_na(growth) %>% 
-  select(leaidC, leaname, subject, growth) %>% 
+  select(leaidC, leaname, cohort, subject, growth) %>% 
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
-  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(ela = mean(ela), math = mean(math)) %>% 
+  mutate(avg_growth_35yr = mean(c(ela, math), na.rm = TRUE))
 
 
 cohort_6_8 <- clean_growth %>% 
-  filter(grade %in% c(6, 8)) 
-
-%>% 
+  select(-year) %>% 
+  filter(cohort == 2007) %>% 
+  filter(grade %in% c(6, 8)) %>% 
   spread(grade, mn_all) %>% 
-  mutate(growth = `8`-`3`) %>% 
-  drop_na(growth) %>% 
-  select(leaidC, leaname, subject, growth) %>% 
+  mutate(growth = `8`-`6`) %>% 
+  drop_na() %>% 
+  select(leaidC, leaname, cohort, subject, growth) %>% 
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
-  mutate(avg_growth_5yr = mean(c(ela, math), na.rm = TRUE))
+  mutate(ela = mean(ela), math = mean(math)) %>% 
+  mutate(avg_growth_68yr = mean(c(ela, math), na.rm = TRUE))
 
 
 
