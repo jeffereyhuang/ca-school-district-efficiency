@@ -439,6 +439,7 @@ gt(top10) %>%
 
 # writing files out
 
+write_rds(full_district_demo, "full.rds")
 write_rds(expense, "CA_EDUC_Data/expense.rds")
 write_rds(comp, "CA_EDUC_Data/comp.rds")
 write_rds(most_eff, "CA_EDUC_Data/efficiency.rds")

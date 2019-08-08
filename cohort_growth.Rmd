@@ -89,6 +89,7 @@ cohort_6_8 <- clean_growth %>%
 
 
 
+
 # sanity check, what if the grade is just really smart?
 # sanity check, big jumps to measure leaving? good teacher?
   # use the standardized dataset for this (this is standardized relative to distr. for cohort)
@@ -133,7 +134,6 @@ ggplot(cohort_3_5) +
   geom_density(aes(x=math)) + 
   geom_density(aes(x=ela))
 
-
 # prevalence of large spikes 
 
 big_jumps <- cohort_3_5 %>% 
@@ -148,4 +148,22 @@ ggplot(big_jumps) +
 
 ```
 
+
+```{r merge}
+
+district <- read_rds("full.rds") 
+
+
+
+
+merged_growth_eff <- district %>% 
+  inner_join(cohort_3_8, by=c("dname" = "leaname")) %>% 
+  mutate(growth_rank = ntile(combined_38_growth, 100)) %>% 
+  drop_na(expense_rank)
+
+ggplot(merged_growth_eff) +
+  geom_point(aes(x="expense_rank",y="growth_rank"))
+  
+  
+```
 
