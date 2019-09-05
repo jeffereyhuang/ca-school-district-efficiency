@@ -99,6 +99,8 @@ pc <- read_csv("data/pc-2016.csv") %>%
   clean_names() %>% 
   filter(str_detect(tolower(job_title), "teacher"))
 
+full_salary <- read_csv("data/salaries15.csv") %>% 
+  clean_names() 
 
 # free and reduced lunch - get free reduced lunch %  and enrollments and district code
 
@@ -136,7 +138,13 @@ pc_tsal <- pc %>%
 addtl_schools <- bind_rows(carmel_tsal, mend_tsal, pc_tsal)
 
 
-# free and reduced lunchdata cleaning: calculate free and reduced lunch percentages
+# full salary data cleaning
+
+full_salary <- full_salary %>% 
+  rename(ada = average_daily_attendance, avg_salary = avg_salary_2014_15)
+
+
+# free and reduced lunch data cleaning: calculate free and reduced lunch percentages
 
 frlunch_rate <- frlunch %>% 
   mutate(district_code = paste(county_code, district_code, sep="")) %>% 
@@ -271,7 +279,7 @@ full_expense <- bind_rows(expense15, expense16, expense17, expense18, .id="year"
   filter(lea_type == "Unified") %>% 
   mutate(district_code = paste(co, cds, sep="")) %>% 
   group_by(district_code, district) %>% 
-  summarize(d_spend = sum(current_expense_ada)) %>% 
+  summarize(d_spend = sum(current_expense_per_ada)/ 4) %>% 
   ungroup() %>% 
   mutate(expense_rank = ntile(desc(d_spend), 100))
 
@@ -302,6 +310,7 @@ index <- district %>%
 # create table with entire dataset, cleaned
 
 full_district_demo <- full_join(index, full_staff, by=c("district_code", "dname" = "district_name")) %>% 
+  left_join(full_salary, by=c("dname" = "district_name")) %>% 
   select(-county_name) %>% 
   drop_na(dname) %>% 
   distinct(dname, district_code, .keep_all=TRUE)
