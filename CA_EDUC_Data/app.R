@@ -143,15 +143,14 @@ ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
              mainPanel(
                "Much of recent scholarship and political debate regarding education has focused on money and outcomes, as well as efficiency of this spending.
                This project was created to explore some of those trends and correlations. I have aggregated data across different sources 
-               from the California Department of Education, as well as Transparent California. Data for  ACTand AP scores is a 4 year average
+               from the California Department of Education, as well as Transparent California. Data for  ACT and AP scores is a 4 year average
                from 2015-2018, while SAT data is an average from 2015-2016. Per pupil spending is also an average across four years. 
-               All other data for school district demographics are from the 2017 school year, while teacher salaries for Mendocino Unified, 
-               Carmel Unified, and Piedmont City Unified are from 2017, 2015, and 2016 (due to data constraints).",
+               All other data for school district demographics are from the 2017 school year.",
                
                br(),
                br(),
                
-               "This project was created by Jefferey Huang (jeffereyhuang[at]gmail.com). The code can be found at https://github.com/jeffereyhuang/california-county-education-data.",
+               "This project was created by Jefferey Huang (jeffereyhuang[at]gmail.com). The code can be found at https://github.com/jeffereyhuang/ca-school-district-efficiency.",
                
                br(),
                br(),
@@ -177,15 +176,17 @@ ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
 
 
 
-# Define server logic required to draw a histogram
+# Define server logic required to draw a graphs
 server <- function(input, output) {
    
    output$spendPlot <- renderPlot({
       expense %>% mutate(dname = fct_reorder(dname, d_spend)) %>% 
-      ggplot(aes(x=dname,y=comp_rank)) +
+      
+      ggplot(aes(x=dname,y=act_comp_rank)) +
       geom_bar(stat="identity") + 
       coord_flip() +
       theme_economist() +
+      ylim(0,100) +
       labs(title="Top 10 Highest Spending Districts - ACT Performance", y="Percentile Rank for ACT Scores",x=NULL)
    })
    
@@ -231,6 +232,7 @@ server <- function(input, output) {
        geom_bar(stat="identity") +
        coord_flip() + 
        theme_economist() +
+       ylim(0,100) +
        labs(title="Per Pupil Spending of Top 10 Highest Performing Districts", y="Percentile Rank in Spending", x=NULL)
      
    })

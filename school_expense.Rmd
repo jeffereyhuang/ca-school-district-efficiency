@@ -87,15 +87,15 @@ expense15 <- read_xls("data/expense15.xls",
 # teacher stats of most efficient school districts
 # $61-74K - avg teacher salary
 
-carmel <- read_csv("data/carmel-2015.csv") %>% 
+walnut <- read_csv("data/walnut-2017.csv") %>% 
   clean_names() %>% 
-  filter(job_title == "Teacher")
+  filter(str_detect(tolower(job_title), "teacher"))
 
-mend <- read_csv("data/mendocino-unified-2017.csv") %>% 
+tc <- read_csv("data/temple-city-2017.csv") %>% 
   clean_names() %>% 
-  filter(job_title == "Hs Teacher")
+  filter(str_detect(tolower(job_title), "teacher"))
   
-pc <- read_csv("data/pc-2016.csv") %>% 
+op <- read_csv("data/oak-park-2017.csv") %>% 
   clean_names() %>% 
   filter(str_detect(tolower(job_title), "teacher"))
 
@@ -120,22 +120,22 @@ staff <- read_tsv("StaffDemo17.txt") %>%
 
 # Cleaning data for most efficient schools: aggregate to the district averages
 
-carmel_tsal <- carmel %>% 
+walnut_tsal <- walnut %>% 
   rename(District = agency) %>% 
   group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
-mend_tsal <- mend %>% 
+tc_tsal <- tc %>% 
   rename(District = agency) %>% 
   group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
-pc_tsal <- pc %>% 
+op_tsal <- op %>% 
   rename(District = agency) %>% 
   group_by(District) %>% 
   summarize(total = mean(total_pay_benefits), base = mean(base_pay))
 
-addtl_schools <- bind_rows(carmel_tsal, mend_tsal, pc_tsal)
+addtl_schools <- bind_rows(walnut_tsal, tc_tsal, op_tsal)
 
 
 # full salary data cleaning
@@ -320,6 +320,7 @@ full_district_demo <- full_join(index, full_staff, by=c("district_code", "dname"
 
 expense <- full_district_demo %>% 
   arrange(desc(d_spend)) %>% 
+  drop_na(act_comp_rank) %>% 
   head(10)
 
 comp <- full_district_demo %>% 
@@ -377,11 +378,10 @@ efficiency <- bind_rows(efficiency, average)
 # clean data for display
 
 most_eff <- efficiency %>% 
-  select(-sat_part_rank, -act_part_rank, -ap_part_rank, -ap_score_rank, -act_comp_rank, -sat_comp_rank, -`Spend Percentile Rank`, -bachelor, -doctor, -master, -`Efficiency Index`, -comp_index, -part_index, -`Composite Percentile Rank`, -`Participation Percentile Rank`) %>% 
-  select(1:25)
+  select(-sat_part_rank, -act_part_rank, -ap_part_rank, -ap_score_rank, -act_comp_rank, -sat_comp_rank, -`Spend Percentile Rank`, -bachelor, -doctor, -master, -`Efficiency Index`, -comp_index, -part_index, -`Composite Percentile Rank`, -`Participation Percentile Rank`) 
 
 top3 <- efficiency %>% 
-  filter(District %in% c("Carmel Unified", "Mendocino Unified", "Piedmont City Unified", "Average Values"))
+  filter(District %in% c("Walnut Valley Unified", "Temple City Unified", "Oak Park Unified", "Average Values"))
 
 top10 <- efficiency %>% 
   arrange(desc(`Efficiency Index`))
