@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(ggplot2)
+library(gt)
 
 growth_data <- read.csv("data/CA_SEDA_long.csv") 
 
@@ -80,15 +81,17 @@ cohort_3_5 <- cohort_35_3rd %>%
   drop_na(combined_35_growth) %>% 
   ungroup() %>% 
   group_by(leaidC, leaname, cohort) %>% 
-  mutate(yearly_jump = mean(c(math, ela), na.rm = TRUE)) 
+  mutate(yearly_jump = mean(c(math, ela), na.rm = TRUE)) %>% 
+  ungroup()
 
   ## total enroll
 cohort_35_3rd <- cohort_35_3rd %>% 
   group_by(leaidC) %>% 
-  summarize(total_enroll = as.integer(mean(total_enroll)))
+  summarize(total_enroll = as.integer(mean(total_enroll))) %>% 
+  ungroup()
 
 cohort_3_5 <- cohort_3_5 %>% 
-  left_join(cohort_35_3rd, by="leaidC")
+  left_join(cohort_35_3rd, by="leaidC") 
 
 
 # one year of data
@@ -103,7 +106,8 @@ cohort_6_8 <- clean_growth %>%
   spread(subject, growth) %>%
   group_by(leaidC, leaname) %>% 
   mutate(ela = mean(ela), math = mean(math)) %>% 
-  mutate(combined_68_growth = mean(c(ela, math), na.rm = TRUE))
+  mutate(combined_68_growth = mean(c(ela, math), na.rm = TRUE)) %>% 
+  ungroup()
 
 ```
 
@@ -210,7 +214,9 @@ summary(fit)
 
 
 # *** display ***
-# highest growth schools with high poverty rates -- median income -- minority rates -- gender gaps -- enrollment
+# highest growth schools with high poverty rates -- median income -- minority rates -- gender gaps -- enrollment -- teacher salaries, recent increases
+
+## for later, variance between grade, num grades
 merged <- merged %>% 
   mutate(enroll_group = ifelse(enrollment < 6000, 0, 1), avg_class_size = enrollment/teacher, staff_ratio = num_staff/enrollment) %>% 
   filter(avg_class_size < 40)
@@ -219,18 +225,26 @@ merged %>%
   ggplot(aes(x=free_rate, y=combined_35_growth)) +
   geom_point(aes(color=avg_class_size)) +
   geom_smooth()
+```
 
+```{r}
+
+# highest growth schools with high poverty rates -- median income -- minority rates -- gender gaps -- enrollment -- teacher salaries, recent increases
+
+## for later, variance between grade, num grades
 
 highest_growth <- cohort_3_5 %>% 
-  arrange(desc(combined_35_growth))
+  select(-ela,-math,-yearly_jump, -cohort, -leaidC) %>% 
+  distinct() %>% 
+  rename("District" = leaname, "ELA Growth" = ela_avg, "Math Growth" = math_avg, "Average Growth" = combined_35_growth, "Enrollment" = total_enroll) %>%
+  arrange(desc(`Average Growth`))
 
  
 gt(highest_growth) %>% 
   tab_header(
-    title= "Most Efficient CA School Districts") %>% 
-  fmt_number(columns = c(3:5),
+    title= "Most Effective CA School Districts") %>% 
+  fmt_number(columns = c(2:4),
              decimals = 1)
-
 
 # maps with toggles
 
