@@ -164,9 +164,6 @@ ggplot(big_jumps) +
 
 district <- read_rds("full.rds") 
 
-
-
-
 # merged_growth_eff <- district %>% 
 #   inner_join(cohort_3_8, by=c("dname" = "leaname")) %>% 
 #   mutate(growth_rank = ntile(combined_38_growth, 100)) %>% 
@@ -214,9 +211,7 @@ summary(fit)
 
 
 # *** display ***
-# highest growth schools with high poverty rates -- median income -- minority rates -- gender gaps -- enrollment -- teacher salaries, recent increases
 
-## for later, variance between grade, num grades
 merged <- merged %>% 
   mutate(enroll_group = ifelse(enrollment < 6000, 0, 1), avg_class_size = enrollment/teacher, staff_ratio = num_staff/enrollment) %>% 
   filter(avg_class_size < 40)
@@ -233,11 +228,19 @@ merged %>%
 
 ## for later, variance between grade, num grades
 
-highest_growth <- cohort_3_5 %>% 
+cohort35_display <- cohort_3_5 %>% 
   select(-ela,-math,-yearly_jump, -cohort, -leaidC) %>% 
   distinct() %>% 
-  rename("District" = leaname, "ELA Growth" = ela_avg, "Math Growth" = math_avg, "Average Growth" = combined_35_growth, "Enrollment" = total_enroll) %>%
+  rename("District" = leaname, "ELA Growth" = ela_avg, "Math Growth" = math_avg, "Average Growth" = combined_35_growth, "Enrollment" = total_enroll) 
+
+highest_growth <- cohort35_display %>%
   arrange(desc(`Average Growth`))
+
+largest <- cohort35_display %>%
+  arrange(desc(`Enrollment`))
+
+display35 <- cohort35_display %>% 
+  arrange(District)
 
  
 gt(highest_growth) %>% 
@@ -246,8 +249,18 @@ gt(highest_growth) %>%
   fmt_number(columns = c(2:4),
              decimals = 1)
 
+gt(largest) %>% 
+  tab_header(
+    title= "Performance of Largest CA School Districts") %>% 
+  fmt_number(columns = c(2:4),
+             decimals = 1)
+
 # maps with toggles
 
+
+write_rds(largest, "CA_EDUC_Data/largest.rds")
+write_rds(highest_growth, "CA_EDUC_Data/highest_growth.rds")
+write_rds(display35, "CA_EDUC_Data/display35.rds")
 ```
 
 

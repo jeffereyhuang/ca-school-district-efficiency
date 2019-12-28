@@ -30,6 +30,9 @@ eff_adv <- read_rds("eff_adv.rds")
 eff_frpm <- read_rds("eff_frpm.rds")
 eff_addtl <- read_rds("eff_addtl.rds")
 select_eff <- read_rds("select_eff.rds")
+highest_growth <- read_rds("highest_growth.rds")
+largest <- read_rds("largest.rds")
+display35 <- read_rds("display35.rds")
 
 
 
@@ -39,12 +42,47 @@ select_eff <- read_rds("select_eff.rds")
 
 # Define UI for application that draws a histogram
 
-ui <- navbarPage("Measuring District Efficiency in CA HS Schools",
+ui <- navbarPage("Measuring District Effectiveness in CA Schools",
    
   
    # different tabs
+   tabPanel("Explore Elementary School Performance by District",
+            
+            fluidPage(
+               
+               # Application title
+               
+               titlePanel("Elementary School Growth"),
+               
+               
+               mainPanel(
+                  
+                  # selectInput("sdistrict", 
+                  #             "Please select a CA school district to view.",
+                  #             display35$District),
+                  # br(),
+                  # br(),
+                  # 
+                  # 
+                  DTOutput("35_comparisonTable")
+
+                  # br(),
+                  # br(),
+                  # br(),
+                  # br(),
+                  # br(),
+                  # br(),
+                  
+                  
+                  
+                  # plotOutput("35_bigPlotTable")
+                  
+                  # br()
+               )
+            )
+   ),
    
-   tabPanel("Explore School Districts",
+   tabPanel("Explore College Readiness by School District",
             
             fluidPage(
               
@@ -188,6 +226,14 @@ server <- function(input, output) {
       theme_economist() +
       ylim(0,100) +
       labs(title="Top 10 Highest Spending Districts - ACT Performance", y="Percentile Rank for ACT Scores",x=NULL)
+   })
+   
+   output$`35_comparisonTable` <- renderDT({
+      display35 %>% 
+         datatable(rownames=FALSE,
+         class="display",
+         options=list(dom="t")) %>% 
+      formatRound(c(2:4), 2)
    })
    
    output$comparisonTable <- renderDT({
