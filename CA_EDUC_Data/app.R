@@ -44,44 +44,6 @@ display35 <- read_rds("display35.rds")
 
 ui <- navbarPage("Measuring District Effectiveness in CA Schools",
    
-  
-   # different tabs
-   tabPanel("Explore Elementary School Performance by District",
-            
-            fluidPage(
-               
-               # Application title
-               
-               titlePanel("Elementary School Growth"),
-               
-               
-               mainPanel(
-                  
-                  # selectInput("sdistrict", 
-                  #             "Please select a CA school district to view.",
-                  #             display35$District),
-                  # br(),
-                  # br(),
-                  # 
-                  # 
-                  DTOutput("35_comparisonTable")
-
-                  # br(),
-                  # br(),
-                  # br(),
-                  # br(),
-                  # br(),
-                  # br(),
-                  
-                  
-                  
-                  # plotOutput("35_bigPlotTable")
-                  
-                  # br()
-               )
-            )
-   ),
-   
    tabPanel("Explore College Readiness by School District",
             
             fluidPage(
